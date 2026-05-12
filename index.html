@@ -250,6 +250,16 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
 
     <!-- LAUFEN -->
     <div class="panel run-panel" id="runPanel">
+      <div class="card" style="margin-bottom:16px;border-color:#FC4C0230;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+          <div>
+            <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FC4C02">Strava Sync</div>
+            <div id="stravaStatus" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);margin-top:2px">Nicht verbunden</div>
+          </div>
+        </div>
+        <button id="stravaConnectBtn" style="padding:7px 16px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:#FC4C02;color:#fff">Verbinden</button>
+      </div>
       <div class="stat-row">
         <div class="stat run"><div class="stat-val" id="runKm">0</div><div class="stat-lbl">km gesamt</div></div>
         <div class="stat run"><div class="stat-val" id="runSessions">0</div><div class="stat-lbl">Läufe</div></div>
@@ -405,6 +415,12 @@ let gymData = [], runData = [], foodData = [], weightData = [];
 let gymChart = null, runChart = null, weightChart = null;
 let authMode = 'login';
 
+const STRAVA_CLIENT_ID = '244033';
+const STRAVA_CLIENT_SECRET = '32a0ba6b3e7a8235a1366d1ab4c320d8e9e3c8aa';
+const STRAVA_REDIRECT = 'https://trackfit-dashboard.netlify.app/';
+const STRAVA_AUTH_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all&approval_prompt=auto`;
+let stravaTokens = null;
+
 document.getElementById('currentDate').textContent = new Date().toLocaleDateString('de-DE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
 // ─── AUTH ─────────────────────────────────────────────────────────
@@ -480,6 +496,15 @@ async function showDashboard() {
   document.getElementById('dashboard').classList.add('visible');
   setSyncState('syncing', 'Daten werden geladen...');
   updateExerciseList();
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code && params.get('scope')) {
+    window.history.replaceState({}, '', window.location.pathname);
+    setSyncState('syncing', 'Strava wird verbunden...');
+    await stravaExchangeCode(code);
+  }
+
   await loadAllData();
   setSyncState('synced', 'Cloud-Sync aktiv ✓');
 }
@@ -513,12 +538,22 @@ async function loadAllData() {
   if (settings.data?.split_start_date) {
     document.getElementById('splitStartDate').value = settings.data.split_start_date;
   }
+  if (settings.data?.strava_access_token) {
+    stravaTokens = {
+      access_token: settings.data.strava_access_token,
+      refresh_token: settings.data.strava_refresh_token,
+      expires_at: settings.data.strava_expires_at,
+      athlete_id: settings.data.strava_athlete_id
+    };
+  }
 
   updateGymStats(); renderGymLog(); renderGymChart();
   updateRunStats(); renderRunLog(); renderRunChart();
   updateFoodStats(); renderFoodLog();
   renderWeightLog(); renderWeightChart();
   renderSplitBanner();
+  updateStravaUI();
+  if (stravaTokens) stravaSync(false).catch(console.error);
 }
 
 // ─── SPLIT ────────────────────────────────────────────────────────
@@ -688,8 +723,8 @@ function renderRunLog() {
   log.innerHTML = runData.slice(0,8).map(r => {
     const d = new Date(r.logged_at).toLocaleDateString('de-DE');
     return `<div class="log-item">
-      <div><span class="log-item-name">${r.distance}km · ${r.run_type}</span>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${d}${r.heart_rate?' · ❤️ '+r.heart_rate+' bpm':''}</div>
+      <div><span class="log-item-name">${r.distance}km · ${r.run_type}${r.strava_id?'<span style="color:#FC4C02;font-size:10px;margin-left:6px;font-family:\'JetBrains Mono\',monospace">STRAVA</span>':''}</span>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${d}${r.heart_rate?' · ❤️ '+r.heart_rate+' bpm':''}${r.note?' · '+r.note:''}</div>
       </div>
       <div style="text-align:right"><span class="tag tag-run">${r.pace}/km</span>
         <div class="log-item-meta" style="margin-top:3px">${feels[r.feel]||''}</div>
@@ -835,6 +870,165 @@ function renderWeightChart() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{color:'#8892a4',font:{family:'Rajdhani',size:11},maxRotation:45},grid:{color:'#ffffff08'}},
               y:{ticks:{color:'#8892a4',font:{family:'JetBrains Mono',size:11},callback:v=>v.toFixed(1)+'kg'},grid:{color:'#ffffff10'}}}}});
+}
+
+// ─── STRAVA ───────────────────────────────────────────────────────
+async function stravaExchangeCode(code) {
+  try {
+    const resp = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: STRAVA_CLIENT_ID,
+        client_secret: STRAVA_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code'
+      })
+    });
+    const data = await resp.json();
+    if (!data.access_token) throw new Error(data.message || 'Auth fehlgeschlagen');
+    await stravaStoreTokens(data);
+  } catch(e) {
+    console.error('Strava auth error:', e);
+  }
+}
+
+async function stravaStoreTokens(data) {
+  await db.from('user_settings').upsert({
+    user_id: currentUser.id,
+    strava_access_token: data.access_token,
+    strava_refresh_token: data.refresh_token,
+    strava_expires_at: data.expires_at,
+    strava_athlete_id: data.athlete?.id || null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  stravaTokens = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_at,
+    athlete_id: data.athlete?.id || null
+  };
+  updateStravaUI();
+}
+
+async function stravaGetToken() {
+  if (!stravaTokens) return null;
+  if (stravaTokens.expires_at > Math.floor(Date.now() / 1000) + 60) return stravaTokens.access_token;
+  try {
+    const resp = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: STRAVA_CLIENT_ID,
+        client_secret: STRAVA_CLIENT_SECRET,
+        refresh_token: stravaTokens.refresh_token,
+        grant_type: 'refresh_token'
+      })
+    });
+    const data = await resp.json();
+    if (!data.access_token) throw new Error('Refresh fehlgeschlagen');
+    await stravaStoreTokens(data);
+    return data.access_token;
+  } catch(e) {
+    console.error('Strava refresh error:', e);
+    return null;
+  }
+}
+
+async function stravaSync(showFeedback = true) {
+  const token = await stravaGetToken();
+  if (!token) return;
+  if (showFeedback) setSyncState('syncing', 'Strava: Aktivitäten werden geladen...');
+  try {
+    const { data: cfg } = await db.from('user_settings')
+      .select('strava_last_sync').eq('user_id', currentUser.id).single();
+    const after = cfg?.strava_last_sync
+      ? Math.floor(new Date(cfg.strava_last_sync).getTime() / 1000)
+      : Math.floor(Date.now() / 1000) - 90 * 86400;
+
+    const resp = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?per_page=100&after=${after}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const activities = await resp.json();
+    if (!Array.isArray(activities)) throw new Error('Strava API Fehler');
+
+    const runs = activities.filter(a => ['Run','VirtualRun','TrailRun'].includes(a.sport_type || a.type));
+    const existing = new Set(runData.map(r => r.strava_id).filter(Boolean));
+    const fresh = runs.filter(a => !existing.has(String(a.id)));
+
+    if (fresh.length) {
+      const rows = fresh.map(a => ({
+        user_id: currentUser.id,
+        distance: parseFloat((a.distance / 1000).toFixed(2)),
+        duration: stravaFmtDur(a.moving_time),
+        run_type: 'Strava Import',
+        heart_rate: a.average_heartrate ? Math.round(a.average_heartrate) : null,
+        feel: 3,
+        pace: stravaFmtPace(a.distance, a.moving_time),
+        logged_at: a.start_date,
+        strava_id: String(a.id),
+        note: a.name || ''
+      }));
+      const { error } = await db.from('run_entries').insert(rows);
+      if (error) throw error;
+      const { data: allRuns } = await db.from('run_entries')
+        .select('*').eq('user_id', currentUser.id).order('logged_at', { ascending: false });
+      runData = allRuns || [];
+      updateRunStats(); renderRunLog(); renderRunChart();
+    }
+
+    await db.from('user_settings').upsert({
+      user_id: currentUser.id,
+      strava_last_sync: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+    if (showFeedback) setSyncState('synced', fresh.length ? `Strava: ${fresh.length} neue Läufe ✓` : 'Strava: Kein neuer Lauf');
+  } catch(e) {
+    console.error('Strava sync error:', e);
+    if (showFeedback) setSyncState('synced', 'Strava: Fehler beim Sync');
+  }
+}
+
+function stravaFmtDur(sec) {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+function stravaFmtPace(distM, sec) {
+  if (!distM || !sec) return '0:00';
+  const p = sec / 60 / (distM / 1000);
+  return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')}`;
+}
+
+function updateStravaUI() {
+  const btn = document.getElementById('stravaConnectBtn');
+  const status = document.getElementById('stravaStatus');
+  if (!btn || !status) return;
+  if (stravaTokens?.access_token) {
+    status.innerHTML = '<span style="color:var(--green)">● Verbunden</span>';
+    btn.textContent = 'Trennen';
+    btn.style.cssText = 'padding:7px 16px;border-radius:8px;border:1px solid var(--border2);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--text3)';
+    btn.onclick = stravaDisconnect;
+  } else {
+    status.innerHTML = '<span style="color:var(--text3)">● Nicht verbunden</span>';
+    btn.textContent = 'Verbinden';
+    btn.style.cssText = 'padding:7px 16px;border-radius:8px;border:none;font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:#FC4C02;color:#fff';
+    btn.onclick = () => { window.location.href = STRAVA_AUTH_URL; };
+  }
+}
+
+async function stravaDisconnect() {
+  await db.from('user_settings').upsert({
+    user_id: currentUser.id,
+    strava_access_token: null,
+    strava_refresh_token: null,
+    strava_expires_at: null,
+    strava_athlete_id: null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  stravaTokens = null;
+  updateStravaUI();
 }
 
 // ─── UI HELPERS ───────────────────────────────────────────────────
