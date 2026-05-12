@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrackFit Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -372,7 +372,17 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
 const SUPABASE_URL = 'https://jduosffugmhygjvrhdas.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdW9zZmZ1Z21oeWdqdnJoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzI4MzksImV4cCI6MjA5NDE0ODgzOX0.jFvzSvkJGmKkm7gMw9Z414Xiq42WDljzAVbweDU1Y7o';
 const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
+
+// Holt immer eine frische Session - verhindert Auth-Timeouts
+async function freshInsert(table, payload) {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) throw new Error('Keine Session');
+  currentUser = session.user;
+  return db.from(table).insert({ ...payload, user_id: currentUser.id }).select();
+}
 
 const GOALS = {kcal:3700,prot:200,carbs:430,fat:95};
 const EXERCISES = {
@@ -570,23 +580,26 @@ async function addGymEntry() {
   const btn = document.getElementById('gymSubmitBtn');
   btn.disabled = true; btn.textContent = 'Wird gespeichert...';
   setSyncState('syncing', 'Speichern...');
-  const { data, error } = await db.from('gym_entries').insert({
-    user_id: currentUser.id,
-    exercise: ex,
-    weight: parseFloat(wt),
-    sets: parseInt(parts[0])||1,
-    reps: parseInt(parts[1])||1,
-    day_type: document.getElementById('gymDayType').value,
-    is_pr: document.getElementById('gymPR').value === '1',
-    note: document.getElementById('gymNote').value,
-    logged_at: new Date().toISOString()
-  }).select();
-  if (!error && data) {
+  try {
+    const { data, error } = await freshInsert('gym_entries', {
+      exercise: ex,
+      weight: parseFloat(wt),
+      sets: parseInt(parts[0])||1,
+      reps: parseInt(parts[1])||1,
+      day_type: document.getElementById('gymDayType').value,
+      is_pr: document.getElementById('gymPR').value === '1',
+      note: document.getElementById('gymNote').value,
+      logged_at: new Date().toISOString()
+    });
+    if (error) throw error;
     gymData.unshift(data[0]);
     updateGymStats(); renderGymLog(); renderGymChart();
     ['gymWeight','gymSetsReps','gymNote'].forEach(id => document.getElementById(id).value='');
     document.getElementById('gymPR').value='0';
     setSyncState('synced', 'Gespeichert ✓');
+  } catch(e) {
+    setSyncState('synced', 'Fehler: '+e.message);
+    alert('Fehler beim Speichern: '+e.message);
   }
   btn.disabled = false; btn.textContent = 'Eintragen';
 }
@@ -638,22 +651,25 @@ async function addRunEntry() {
   const btn = document.getElementById('runSubmitBtn');
   btn.disabled=true; btn.textContent='Wird gespeichert...';
   setSyncState('syncing','Speichern...');
-  const { data, error } = await db.from('run_entries').insert({
-    user_id: currentUser.id,
-    distance: parseFloat(dist),
-    duration: time,
-    run_type: document.getElementById('runType').value,
-    heart_rate: parseInt(document.getElementById('runHR').value)||null,
-    feel: parseInt(document.getElementById('runFeel').value),
-    pace,
-    logged_at: new Date().toISOString()
-  }).select();
-  if (!error && data) {
+  try {
+    const { data, error } = await freshInsert('run_entries', {
+      distance: parseFloat(dist),
+      duration: time,
+      run_type: document.getElementById('runType').value,
+      heart_rate: parseInt(document.getElementById('runHR').value)||null,
+      feel: parseInt(document.getElementById('runFeel').value),
+      pace,
+      logged_at: new Date().toISOString()
+    });
+    if (error) throw error;
     runData.unshift(data[0]);
     updateRunStats(); renderRunLog(); renderRunChart();
     ['runDistance','runTime','runHR'].forEach(id => document.getElementById(id).value='');
     document.getElementById('runFeel').value='3'; document.getElementById('runFeelVal').textContent='3';
     setSyncState('synced','Gespeichert ✓');
+  } catch(e) {
+    setSyncState('synced','Fehler: '+e.message);
+    alert('Fehler beim Speichern: '+e.message);
   }
   btn.disabled=false; btn.textContent='Eintragen';
 }
@@ -701,21 +717,24 @@ async function addFoodEntry() {
   const btn = document.getElementById('foodSubmitBtn');
   btn.disabled=true; btn.textContent='Wird gespeichert...';
   setSyncState('syncing','Speichern...');
-  const { data, error } = await db.from('food_entries').insert({
-    user_id: currentUser.id,
-    name,
-    meal_type: document.getElementById('foodType').value,
-    calories: kcal,
-    protein: parseFloat(document.getElementById('foodProteinG').value)||0,
-    carbs: parseFloat(document.getElementById('foodCarbs').value)||0,
-    fat: parseFloat(document.getElementById('foodFat').value)||0,
-    logged_at: new Date().toISOString()
-  }).select();
-  if (!error && data) {
+  try {
+    const { data, error } = await freshInsert('food_entries', {
+      name,
+      meal_type: document.getElementById('foodType').value,
+      calories: kcal,
+      protein: parseFloat(document.getElementById('foodProteinG').value)||0,
+      carbs: parseFloat(document.getElementById('foodCarbs').value)||0,
+      fat: parseFloat(document.getElementById('foodFat').value)||0,
+      logged_at: new Date().toISOString()
+    });
+    if (error) throw error;
     foodData.unshift(data[0]);
     updateFoodStats(); renderFoodLog();
     ['foodName','foodCalories','foodProteinG','foodCarbs','foodFat'].forEach(id => document.getElementById(id).value='');
     setSyncState('synced','Gespeichert ✓');
+  } catch(e) {
+    setSyncState('synced','Fehler: '+e.message);
+    alert('Fehler beim Speichern: '+e.message);
   }
   btn.disabled=false; btn.textContent='Eintragen';
 }
