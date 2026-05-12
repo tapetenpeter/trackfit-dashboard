@@ -1152,17 +1152,18 @@ function renderOverview(){
 }
 
 function renderOverviewCharts(){
-  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
-  if(ovGymChart)ovGymChart.destroy();
+  const opts={responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
+  const gymCanvas=document.getElementById('ovGymChart');
+  const runCanvas=document.getElementById('ovRunChart');
+  const wCanvas=document.getElementById('ovWeightChart');
+  if(ovGymChart){ovGymChart.destroy();ovGymChart=null;}
+  if(ovRunChart){ovRunChart.destroy();ovRunChart=null;}
+  if(ovWeightChart){ovWeightChart.destroy();ovWeightChart=null;}
   const gymLast=[...gymData].reverse().slice(-8);
-  ovGymChart=new Chart(document.getElementById('ovGymChart'),{type:'line',data:{labels:gymLast.map((_,i)=>i),datasets:[{data:gymLast.map(e=>(e.weight||0)*(e.reps||0)*(e.sets||0)),borderColor:'#00f5d4',backgroundColor:'#00f5d412',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
-  if(ovRunChart)ovRunChart.destroy();
+  if(gymLast.length)ovGymChart=new Chart(gymCanvas,{type:'line',data:{labels:gymLast.map((_,i)=>i),datasets:[{data:gymLast.map(e=>(e.weight||0)*(e.reps||0)*(e.sets||0)),borderColor:'#00f5d4',backgroundColor:'#00f5d412',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
   const runLast=[...runData].reverse().slice(-8);
-  ovRunChart=new Chart(document.getElementById('ovRunChart'),{type:'line',data:{labels:runLast.map((_,i)=>i),datasets:[{data:runLast.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258512',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
-  if(ovWeightChart)ovWeightChart.destroy();
-  if(weightData.length){
-    ovWeightChart=new Chart(document.getElementById('ovWeightChart'),{type:'line',data:{labels:weightData.map((_,i)=>i),datasets:[{data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#7b2fff',backgroundColor:'#7b2fff12',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
-  }
+  if(runLast.length)ovRunChart=new Chart(runCanvas,{type:'line',data:{labels:runLast.map((_,i)=>i),datasets:[{data:runLast.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258512',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
+  if(weightData.length)ovWeightChart=new Chart(wCanvas,{type:'line',data:{labels:weightData.map((_,i)=>i),datasets:[{data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#7b2fff',backgroundColor:'#7b2fff12',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
 }
 
 function renderOverviewActivityLog(){
