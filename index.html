@@ -203,6 +203,27 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
 .weight-entry-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
 .weight-entry-row input{max-width:130px}
 @media(max-width:700px){.grid-2{grid-template-columns:1fr}.col-full{grid-column:1}.macro-goal-grid{grid-template-columns:repeat(2,1fr)}.split-banner{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(3,1fr)}}
+
+/* CALENDAR */
+.cal-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:var(--text3)}
+.cal-title::before{content:'';width:3px;height:12px;border-radius:2px;background:#3b82f6;flex-shrink:0}
+.cal-tabs{display:flex;gap:4px}
+.cal-tab{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;font-family:'Rajdhani',sans-serif;transition:all .15s}
+.cal-tab.active{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+.cal-legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.cal-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-events{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.cal-event{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)}
+.cal-event-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-event-time{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);min-width:70px}
+.cal-event-name{font-size:13px;font-weight:600;color:var(--text)}
+.cal-event-cal{font-size:10px;color:var(--text3);margin-top:1px}
+.cal-day-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.cal-empty{text-align:center;padding:24px;color:var(--text3);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.cal-loading{text-align:center;padding:20px;color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
@@ -450,6 +471,21 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
             <div class="scard-title cyan">Letzte Aktivitäten</div>
             <div class="log-list" id="ov-activity-log"><div class="empty-state">Noch keine Aktivitäten</div></div>
           </div>
+        </div>
+
+        <div class="cal-card" id="calCard">
+          <div class="cal-header">
+            <div class="cal-title">Kalender</div>
+            <div class="cal-tabs">
+              <button class="cal-tab active" onclick="switchCalView('today')">Heute</button>
+              <button class="cal-tab" onclick="switchCalView('week')">Diese Woche</button>
+            </div>
+          </div>
+          <div class="cal-legend">
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#3b82f6"></div>Privat</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#22c55e"></div>Termine Maren Basti</div>
+          </div>
+          <div class="cal-events" id="calEvents"><div class="cal-loading">Kalender wird geladen...</div></div>
         </div>
       </div>
 
@@ -1276,7 +1312,134 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('authScreen').style.display!=='none')handleAuth();
 });
 
+
+// CALENDAR
+var CALENDARS=[
+  {name:'Privat',color:'#3b82f6',url:'https://corsproxy.io/?url=https://p187-caldav.icloud.com/published/2/MjAwODQxNjY3NDIwMDg0Mbby1vvqiGUJjOD-p4z63i__fzpCoPcgk9Ggw6ZhqA5K'},
+  {name:'Termine Maren Basti',color:'#22c55e',url:'https://corsproxy.io/?url=https://p187-caldav.icloud.com/published/2/MjAwODQxNjY3NDIwMDg0Mbby1vvqiGUJjOD-p4z63i-A1kwpJ50DTWzJv2k-YkQX8oHgzxwwr2vajOcU6K2QQG5KqgSTImzMsDlbzsjZkcI'}
+];
+var calAllEvents=[];
+var calView='today';
+
+function switchCalView(view){
+  calView=view;
+  document.querySelectorAll('.cal-tab').forEach(function(t){t.classList.remove('active');});
+  event.target.classList.add('active');
+  renderCalendar();
+}
+
+async function loadCalendars(){
+  var container=document.getElementById('calEvents');
+  if(!container)return;
+  container.innerHTML='<div class="cal-loading">Kalender wird geladen...</div>';
+  calAllEvents=[];
+  for(var i=0;i<CALENDARS.length;i++){
+    var cal=CALENDARS[i];
+    try{
+      var resp=await fetch(cal.url);
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      var text=await resp.text();
+      var parsed=parseICS(text,cal.name,cal.color);
+      calAllEvents=calAllEvents.concat(parsed);
+    }catch(e){
+      console.error('Calendar error for '+cal.name,e);
+    }
+  }
+  calAllEvents.sort(function(a,b){return a.start-b.start;});
+  renderCalendar();
+}
+
+function parseICS(text,calName,color){
+  var events=[];
+  var lines=text.split('\n');
+  var current=null;
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].replace('\r','').trim();
+    if(line==='BEGIN:VEVENT'){current={};}
+    else if(line==='END:VEVENT'&&current){
+      if(current.start){
+        events.push({name:current.summary||'Kein Titel',start:current.start,end:current.end,allDay:current.allDay||false,calName:calName,color:color});
+      }
+      current=null;
+    } else if(current){
+      if(line.indexOf('SUMMARY')===0)current.summary=line.split(':').slice(1).join(':').trim();
+      else if(line.indexOf('DTSTART;VALUE=DATE:')===0){current.start=parseICSDate(line.split(':')[1]);current.allDay=true;}
+      else if(line.indexOf('DTSTART')===0){
+        var val=line.split(':').slice(1).join(':');
+        current.start=parseICSDateTime(val.trim());
+      }
+      else if(line.indexOf('DTEND;VALUE=DATE:')===0){current.end=parseICSDate(line.split(':')[1]);}
+      else if(line.indexOf('DTEND')===0){
+        var val2=line.split(':').slice(1).join(':');
+        current.end=parseICSDateTime(val2.trim());
+      }
+    }
+  }
+  return events;
+}
+
+function parseICSDate(s){
+  s=s.trim();
+  var y=parseInt(s.substr(0,4)),m=parseInt(s.substr(4,2))-1,d=parseInt(s.substr(6,2));
+  return new Date(y,m,d);
+}
+
+function parseICSDateTime(s){
+  s=s.trim();
+  if(s.length>=15){
+    var y=parseInt(s.substr(0,4)),mo=parseInt(s.substr(4,2))-1,d=parseInt(s.substr(6,2));
+    var h=parseInt(s.substr(9,2)),mi=parseInt(s.substr(11,2));
+    if(s.charAt(s.length-1)==='Z')return new Date(Date.UTC(y,mo,d,h,mi));
+    return new Date(y,mo,d,h,mi);
+  }
+  return parseICSDate(s);
+}
+
+function renderCalendar(){
+  var container=document.getElementById('calEvents');
+  if(!container)return;
+  var now=new Date();
+  var todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var todayEnd=new Date(todayStart.getTime()+86400000);
+  var filtered=[];
+  if(calView==='today'){
+    filtered=calAllEvents.filter(function(e){return e.start>=todayStart&&e.start<todayEnd;});
+    if(!filtered.length){container.innerHTML='<div class="cal-empty">Keine Termine heute</div>';return;}
+    container.innerHTML=filtered.map(function(e){return calEventHTML(e);}).join('');
+  } else {
+    var weekEnd=new Date(todayStart.getTime()+7*86400000);
+    filtered=calAllEvents.filter(function(e){return e.start>=todayStart&&e.start<weekEnd;});
+    if(!filtered.length){container.innerHTML='<div class="cal-empty">Keine Termine diese Woche</div>';return;}
+    var html='';
+    var lastDay='';
+    for(var i=0;i<filtered.length;i++){
+      var e=filtered[i];
+      var dayLabel=e.start.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
+      if(dayLabel!==lastDay){html+='<div class="cal-day-label">'+dayLabel+'</div>';lastDay=dayLabel;}
+      html+=calEventHTML(e);
+    }
+    container.innerHTML=html;
+  }
+}
+
+function calEventHTML(e){
+  var timeStr='';
+  if(e.allDay){timeStr='Ganztägig';}
+  else{
+    timeStr=e.start.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    if(e.end)timeStr+=' – '+e.end.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  }
+  return '<div class="cal-event">'+
+    '<div class="cal-event-dot" style="background:'+e.color+'"></div>'+
+    '<div class="cal-event-time">'+timeStr+'</div>'+
+    '<div><div class="cal-event-name">'+e.name+'</div>'+
+    '<div class="cal-event-cal">'+e.calName+'</div></div>'+
+    '</div>';
+}
+
+
 init();
+loadCalendars();
 </script>
 </body>
 </html>
