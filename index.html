@@ -3,156 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TrackFit Dashboard</title>
+<title>Dashboard · Bastian Tiedemann</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;--bg4:#222736;
-  --border:#ffffff12;--border2:#ffffff20;
-  --text:#e8ecf5;--text2:#8892a4;--text3:#545e72;
-  --cyan:#00f5d4;--pink:#f72585;--yellow:#ffd60a;--purple:#7b2fff;--orange:#ff6b35;--green:#39ff14;
+  --bg:#080a0f;--bg2:#0f1117;--bg3:#151820;--bg4:#1c2030;--bg5:#242840;
+  --border:#ffffff0e;--border2:#ffffff18;--border3:#ffffff25;
+  --text:#e8ecf5;--text2:#7a849a;--text3:#3d4558;
+  --cyan:#00f5d4;--pink:#f72585;--yellow:#ffd60a;--purple:#7b2fff;--orange:#ff6b35;--green:#39ff14;--strava:#FC4C02;
   font-family:'Rajdhani',sans-serif;
 }
 html,body{min-height:100vh;background:var(--bg);color:var(--text)}
 
-/* AUTH SCREEN */
-.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+/* AUTH */
+.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg)}
 .auth-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:36px;width:100%;max-width:400px}
-.auth-logo{font-size:28px;font-weight:700;letter-spacing:3px;color:var(--cyan);text-align:center;margin-bottom:4px}
-.auth-logo span{color:var(--pink)}
-.auth-sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:28px}
+.auth-logo-main{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px;color:#b8bdc9;text-align:center}
+.auth-logo-divider{width:100%;height:1px;background:#ffffff10;margin:6px 0}
+.auth-logo-sub{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;color:#3d4558;text-transform:uppercase;text-align:center;margin-bottom:28px}
 .auth-tabs{display:flex;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:24px;gap:3px}
 .auth-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:6px;color:var(--text2);transition:all .2s}
 .auth-tab.active{background:var(--bg4);color:var(--cyan)}
 .auth-form{display:flex;flex-direction:column;gap:14px}
-.auth-form input{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;transition:border .2s}
+.auth-form input{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;transition:border .2s;width:100%}
 .auth-form input:focus{border-color:var(--cyan)}
-.btn-auth{padding:13px;border-radius:8px;border:none;background:var(--cyan);color:#000;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-auth{padding:13px;border-radius:8px;border:none;background:var(--cyan);color:#000;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:4px;width:100%}
 .btn-auth:hover{opacity:.85}
 .auth-msg{font-size:13px;text-align:center;padding:10px;border-radius:8px;margin-top:8px}
 .auth-msg.error{background:#ff4d4d20;color:#ff4d4d;border:1px solid #ff4d4d40}
 .auth-msg.success{background:#39ff1420;color:var(--green);border:1px solid #39ff1440}
 
-/* DASHBOARD */
-.dash{display:none;grid-template-rows:auto auto 1fr;min-height:100vh}
-.dash.visible{display:grid}
-.header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:50}
-.logo{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--cyan)}.logo span{color:var(--pink)}
-.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.date-chip{background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:20px;font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace}
-.user-chip{background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:20px;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sync-indicator{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg3);transition:all .3s}
-.sync-indicator.synced{color:var(--green);border-color:#39ff1430}
-.sync-indicator.syncing{color:var(--yellow);border-color:#ffd60a30}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.btn-sm-header{background:transparent;border:1px solid var(--border2);color:var(--text2);padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.btn-sm-header:hover{background:var(--bg3);color:var(--text)}
-.btn-danger-sm{background:transparent;border:1px solid #ff4d4d40;color:#ff4d4d;padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
-.btn-danger-sm:hover{background:#ff4d4d20}
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:40}
-.tab{padding:13px 22px;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;border-bottom:3px solid transparent;color:var(--text2);transition:all .2s;text-transform:uppercase;border-right:1px solid var(--border)}
-.tab:hover{color:var(--text);background:var(--bg3)}
-.tab.active.gym{color:var(--cyan);border-bottom-color:var(--cyan)}
-.tab.active.run{color:var(--pink);border-bottom-color:var(--pink)}
-.tab.active.food{color:var(--yellow);border-bottom-color:var(--yellow)}
-.content{background:var(--bg);padding:20px;overflow-y:auto}
-.panel{display:none}.panel.active{display:block}
-.section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-@media(max-width:700px){.section-grid{grid-template-columns:1fr}.card-full{grid-column:1}}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
-.card-full{grid-column:1/-1}
-.card-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.card-title::before{content:'';width:3px;height:12px;border-radius:2px;background:currentColor}
-.gym .card-title{color:var(--cyan)}.run .card-title{color:var(--pink)}.food .card-title{color:var(--yellow)}
-.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
-.stat{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
-.stat-val{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
-.stat-lbl{font-size:11px;color:var(--text2);margin-top:3px;letter-spacing:1px;text-transform:uppercase}
-.stat.gym .stat-val{color:var(--cyan)}.stat.run .stat-val{color:var(--pink)}.stat.food .stat-val{color:var(--yellow)}
+/* LOADING */
+.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;background:var(--bg)}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+
+/* LAYOUT */
+.dash{display:none;min-height:100vh}
+.dash.visible{display:flex}
+
+/* SIDEBAR */
+.sidebar{width:230px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
+.sidebar-logo{padding:22px 18px 18px;border-bottom:1px solid var(--border)}
+.logo-main{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;color:#b8bdc9}
+.logo-divider{width:100%;height:1px;background:#ffffff10;margin:6px 0}
+.logo-sub{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#3d4558;text-transform:uppercase}
+.sidebar-section{padding:16px 12px 4px}
+.sidebar-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--text2);transition:all .15s;text-transform:uppercase;margin-bottom:2px;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{background:var(--bg4);color:var(--text)}
+.nav-item.active{background:var(--bg4)}
+.nav-item.active[data-page="overview"]{color:var(--cyan);border-left-color:var(--cyan);padding-left:8px}
+.nav-item.active[data-page="gym"]{color:var(--cyan);border-left-color:var(--cyan);padding-left:8px}
+.nav-item.active[data-page="run"]{color:var(--pink);border-left-color:var(--pink);padding-left:8px}
+.nav-item.active[data-page="food"]{color:var(--yellow);border-left-color:var(--yellow);padding-left:8px}
+.nav-item.active[data-page="weight"]{color:var(--purple);border-left-color:var(--purple);padding-left:8px}
+.nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sidebar-bottom{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.user-info{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:var(--bg3)}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0}
+.user-email{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 10px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;width:100%;margin-top:8px;transition:all .2s}
+.btn-logout:hover{border-color:var(--border3);color:var(--text2)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:30}
+.page-title{font-size:17px;font-weight:700;letter-spacing:1px;color:var(--text)}
+.page-sub{font-size:11px;color:var(--text2);margin-top:1px;font-family:'JetBrains Mono',monospace}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:20px;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.chip.green{border-color:#39ff1430;color:var(--green)}
+.chip.yellow{border-color:#ffd60a30;color:var(--yellow)}
+
+/* CONTENT */
+.content{padding:22px 24px;flex:1;overflow-y:auto}
+.page{display:none}.page.active{display:block}
+
+/* CARDS */
+.stat-card{border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:transform .2s;min-height:130px}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card::after{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;filter:blur(45px);opacity:.5;pointer-events:none;transition:opacity .2s}
+.stat-card:hover::after{opacity:.75}
+.stat-card.c-cyan::after{background:var(--cyan)}.stat-card.c-cyan{border-color:#00f5d420}
+.stat-card.c-pink::after{background:var(--pink)}.stat-card.c-pink{border-color:#f7258520}
+.stat-card.c-yellow::after{background:var(--yellow)}.stat-card.c-yellow{border-color:#ffd60a20}
+.stat-card.c-purple::after{background:var(--purple)}.stat-card.c-purple{border-color:#7b2fff20}
+.stat-card.c-strava::after{background:var(--strava)}.stat-card.c-strava{border-color:#FC4C0220}
+.stat-card.c-blue::after{background:#3b82f6}.stat-card.c-blue{border-color:#3b82f620}
+.card-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.card-val{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.1;margin-bottom:2px}
+.card-sub{font-size:11px;color:var(--text2);margin-bottom:10px}
+.mini-chart{height:36px;width:100%;opacity:.8;display:block;margin-bottom:8px}
+.cbadge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px}
+.cb-up{background:#39ff1415;color:#39ff14;border:1px solid #39ff1430}
+.cb-down{background:#00f5d415;color:var(--cyan);border:1px solid #00f5d430}
+.cb-warn{background:#ffd60a15;color:var(--yellow);border:1px solid #ffd60a30}
+.cb-neutral{background:#ffffff08;color:var(--text2);border:1px solid var(--border)}
+
+/* SECTION CARD */
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+.scard-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.scard-title::before{content:'';width:3px;height:12px;border-radius:2px;background:currentColor;flex-shrink:0}
+.scard-title.cyan{color:var(--cyan)}.scard-title.pink{color:var(--pink)}.scard-title.yellow{color:var(--yellow)}.scard-title.purple{color:var(--purple)}
+
+/* FORMS */
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .form-group{display:flex;flex-direction:column;gap:5px}
-.form-group label{font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
-input,select{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;width:100%;outline:none;transition:border .2s}
-input:focus,select:focus{border-color:var(--cyan)}
-.run-panel input:focus,.run-panel select:focus{border-color:var(--pink)}
-.food-panel input:focus,.food-panel select:focus{border-color:var(--yellow)}
+.form-group label{font-size:10px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;font-weight:600}
+input[type=text],input[type=number],input[type=email],input[type=password],input[type=date],select,textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;width:100%;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
 select option{background:var(--bg3)}
+input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:var(--pink);width:100%}
 .btn{padding:10px 20px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;width:100%;margin-top:4px}
-.btn-gym{background:var(--cyan);color:#000}.btn-run{background:var(--pink);color:#fff}.btn-food{background:var(--yellow);color:#000}
 .btn:hover{opacity:.85;transform:translateY(-1px)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.chart-wrap{position:relative;width:100%}
-.exercise-log{display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto}
+.btn-cyan{background:var(--cyan);color:#000}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-yellow{background:var(--yellow);color:#000}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-sm2{padding:8px 16px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--yellow);color:#000;white-space:nowrap}
+
+/* LOGS */
+.log-list{display:flex;flex-direction:column;gap:7px;max-height:240px;overflow-y:auto}
 .log-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px}
-.log-item-name{font-weight:600;color:var(--text)}
-.log-item-meta{color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px}
-.tag{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.tag-gym{background:#00f5d420;color:var(--cyan);border:1px solid #00f5d440}
-.tag-run{background:#f7258520;color:var(--pink);border:1px solid #f7258540}
-.tag-food{background:#ffd60a20;color:var(--yellow);border:1px solid #ffd60a40}
-.progress-bar{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-top:5px}
-.progress-fill{height:100%;border-radius:4px;transition:width .6s ease}
-.progress-fill.over{background:#ff4d4d !important}
-.macro-goal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-@media(max-width:600px){.macro-goal-grid{grid-template-columns:repeat(2,1fr)}}
-.macro-goal-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
-.macro-goal-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.macro-goal-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
-.macro-goal-sub{font-size:10px;color:var(--text3);margin-top:2px}
-.weight-entry-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
-.weight-entry-row input{max-width:130px}
-.btn-sm{padding:9px 16px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--yellow);color:#000;white-space:nowrap}
-.btn-sm:hover{opacity:.85}
-.progress-row{margin-bottom:14px}
-.progress-label-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
-.empty-state{text-align:center;padding:28px;color:var(--text3);font-size:13px;letter-spacing:1px}
-input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:var(--pink)}
+.log-name{font-weight:600;color:var(--text)}
+.log-meta{color:var(--text2);font-size:11px;margin-top:2px}
+.tag{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.tag-cyan{background:#00f5d420;color:var(--cyan);border:1px solid #00f5d440}
+.tag-pink{background:#f7258520;color:var(--pink);border:1px solid #f7258540}
+.tag-yellow{background:#ffd60a20;color:var(--yellow);border:1px solid #ffd60a40}
+.tag-strava{background:#FC4C0220;color:var(--strava);border:1px solid #FC4C0240}
+.empty-state{text-align:center;padding:28px;color:var(--text3);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+/* PROGRESS */
+.prog-row{margin-bottom:13px}
+.prog-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:var(--text2)}
+.prog-val{font-family:'JetBrains Mono',monospace;font-size:11px}
+.pbar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:width .6s ease}
+.pfill.over{background:#ff4d4d !important}
+
+/* SPLIT BANNER */
 .split-banner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px}
-@media(max-width:600px){.split-banner{grid-template-columns:1fr}}
 .split-day{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center}
-.split-day.today-upper{background:#00f5d412;border-color:#00f5d450}
-.split-day.today-lower{background:#f7258512;border-color:#f7258550}
-.split-day.today-rest{background:#ffffff08;border-color:#ffffff25}
-.split-day-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
-.split-day-name{font-size:18px;font-weight:700;letter-spacing:1px}
+.split-day.today-upper{background:#00f5d410;border-color:#00f5d440}
+.split-day.today-lower{background:#f7258510;border-color:#f7258540}
+.split-day.today-rest{background:#ffffff06;border-color:#ffffff20}
+.split-day-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.split-day-name{font-size:16px;font-weight:700;letter-spacing:1px}
 .today-upper .split-day-name{color:var(--cyan)}
 .today-lower .split-day-name{color:var(--pink)}
 .today-rest .split-day-name{color:var(--text2)}
-.split-exercises{font-size:11px;color:var(--text2);margin-top:8px;line-height:1.7;text-align:left}
-.split-exercises span{display:block;padding:1px 0}
+.split-exercises{font-size:11px;color:var(--text2);margin-top:7px;line-height:1.7;text-align:left}
+.split-exercises span{display:block}
+
+/* STAT ROW */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.stat-box-val{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
+.stat-box-lbl{font-size:10px;color:var(--text2);margin-top:3px;letter-spacing:1px;text-transform:uppercase}
+
+/* MACRO GOALS */
+.macro-goal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.macro-goal-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;position:relative;overflow:hidden}
+.macro-goal-item::after{content:'';position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;filter:blur(20px);opacity:.3;pointer-events:none}
+.macro-goal-item.c-yellow::after{background:var(--yellow)}
+.macro-goal-item.c-orange::after{background:var(--orange)}
+.macro-goal-item.c-cyan::after{background:var(--cyan)}
+.macro-goal-item.c-purple::after{background:var(--purple)}
+.macro-goal-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.macro-goal-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.macro-goal-sub{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* GRID LAYOUTS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.col-full{grid-column:1/-1}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+
+/* MODAL */
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center}
 .modal-overlay.visible{display:flex}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:28px;max-width:340px;width:90%;text-align:center}
 .modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
 .modal-body{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.5}
 .modal-actions{display:flex;gap:10px;justify-content:center}
-.btn-confirm-delete{background:#ff4d4d;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.btn-del{background:#ff4d4d;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
 .btn-cancel{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);padding:10px 22px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
-.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px}
-.loading-logo{font-size:28px;font-weight:700;letter-spacing:3px;color:var(--cyan)}
-.loading-logo span{color:var(--pink)}
-.loading-text{font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace}
-.spinner{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+
+/* WEIGHT */
+.weight-entry-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
+.weight-entry-row input{max-width:130px}
+@media(max-width:700px){.grid-2{grid-template-columns:1fr}.col-full{grid-column:1}.macro-goal-grid{grid-template-columns:repeat(2,1fr)}.split-banner{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
-  <div class="loading-logo">TRACK<span>FIT</span></div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;color:#b8bdc9">DASHBOARD</div>
+  <div style="width:120px;height:1px;background:#ffffff10;margin:4px 0"></div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#3d4558;text-transform:uppercase;margin-bottom:16px">Bastian Tiedemann</div>
   <div class="spinner"></div>
   <div class="loading-text">Verbindung wird hergestellt...</div>
 </div>
 
-<!-- AUTH -->
 <div class="auth-screen" id="authScreen" style="display:none">
   <div class="auth-card">
-    <div class="auth-logo">TRACK<span>FIT</span></div>
-    <div class="auth-sub">Dein persönliches Fitness-Dashboard</div>
+    <div class="auth-logo-main">DASHBOARD</div>
+    <div class="auth-logo-divider"></div>
+    <div class="auth-logo-sub">Bastian Tiedemann</div>
     <div class="auth-tabs">
       <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Anmelden</div>
       <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Registrieren</div>
@@ -166,902 +233,1046 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
   </div>
 </div>
 
-<!-- DASHBOARD -->
 <div class="dash" id="dashboard">
   <div class="modal-overlay" id="deleteModal">
     <div class="modal">
       <div class="modal-title">Alle Daten löschen?</div>
-      <div class="modal-body">Alle deine Gym-, Lauf- und Ernährungsdaten werden dauerhaft aus der Cloud gelöscht.</div>
+      <div class="modal-body">Alle Gym-, Lauf- und Ernährungsdaten werden dauerhaft aus der Cloud gelöscht.</div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
-        <button class="btn-confirm-delete" onclick="confirmDelete()">Löschen</button>
+        <button class="btn-del" onclick="confirmDelete()">Löschen</button>
       </div>
     </div>
   </div>
 
-  <div class="header">
-    <div class="logo">TRACK<span>FIT</span></div>
-    <div class="header-right">
-      <div class="date-chip" id="currentDate"></div>
-      <div class="user-chip" id="userChip">...</div>
-      <div class="sync-indicator" id="syncIndicator"><div class="sync-dot"></div><span id="syncText">Verbunden</span></div>
-      <button class="btn-sm-header" onclick="openModal()">🗑 Daten löschen</button>
-      <button class="btn-sm-header" onclick="handleLogout()">Abmelden</button>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-main">DASHBOARD</div>
+      <div class="logo-divider"></div>
+      <div class="logo-sub">Bastian Tiedemann</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Übersicht</div>
+      <div class="nav-item active" data-page="overview" onclick="navigate('overview')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Training</div>
+      <div class="nav-item" data-page="gym" onclick="navigate('gym')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+        Gym
+      </div>
+      <div class="nav-item" data-page="run" onclick="navigate('run')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.5"/><path d="m7 21 3-6m0 0 2-4 3 2 2-6M10 15l-3-3 2-2"/></svg>
+        Laufen
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Gesundheit</div>
+      <div class="nav-item" data-page="food" onclick="navigate('food')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 5 6 5 10c0 5 7 12 7 12s7-7 7-12c0-4-3-8-7-8z"/><circle cx="12" cy="10" r="2"/></svg>
+        Ernährung
+      </div>
+      <div class="nav-item" data-page="weight" onclick="navigate('weight')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h12M4 10h16l-2 8H6l-2-8z"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>
+        Körpergewicht
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Integrationen</div>
+      <div class="nav-item" data-page="run" onclick="navigate('run')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--strava)"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+        Strava
+        <span id="stravaNavBadge" style="margin-left:auto;font-size:9px;padding:2px 6px;border-radius:8px;display:none"></span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">BT</div>
+        <div class="user-email" id="userChip">...</div>
+        <div class="sync-dot" id="syncDot"></div>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()">Abmelden</button>
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active gym" onclick="switchTab('gym')">💪 Gym</div>
-    <div class="tab run" onclick="switchTab('run')">🏃 Laufen</div>
-    <div class="tab food" onclick="switchTab('food')">🥗 Ernährung</div>
-  </div>
-
-  <div class="content">
-
-    <!-- GYM -->
-    <div class="panel gym-panel active" id="gymPanel">
-      <div class="split-banner" id="splitBanner"></div>
-      <div class="stat-row">
-        <div class="stat gym"><div class="stat-val" id="gymSessions">0</div><div class="stat-lbl">Einträge</div></div>
-        <div class="stat gym"><div class="stat-val" id="gymVolume">0</div><div class="stat-lbl">kg Volumen</div></div>
-        <div class="stat gym"><div class="stat-val" id="gymPRs">0</div><div class="stat-lbl">PRs gesamt</div></div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div class="page-sub" id="pageDate"></div>
       </div>
-      <div class="section-grid">
-        <div class="card">
-          <div class="card-title gym">Übung eintragen</div>
-          <div class="form-row">
-            <div class="form-group"><label>Split-Tag</label>
-              <select id="gymDayType" onchange="updateExerciseList()">
-                <option value="upper">Oberkörper</option><option value="lower">Unterkörper</option>
-              </select>
-            </div>
-            <div class="form-group"><label>Übung</label><select id="gymExercise"></select></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="gymWeight" placeholder="60" min="0" step="2.5"></div>
-            <div class="form-group"><label>Sätze × Wiederholungen</label><input type="text" id="gymSetsReps" placeholder="3×10"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>PR? 🏆</label>
-              <select id="gymPR"><option value="0">Nein</option><option value="1">Ja — neuer PR!</option></select>
-            </div>
-            <div class="form-group"><label>Notiz</label><input type="text" id="gymNote" placeholder="Optional..."></div>
-          </div>
-          <button class="btn btn-gym" id="gymSubmitBtn" onclick="addGymEntry()">Eintragen</button>
-        </div>
-        <div class="card">
-          <div class="card-title gym">Letzte Einträge</div>
-          <div class="exercise-log" id="gymLog"><div class="empty-state">Noch keine Einträge</div></div>
-        </div>
-        <div class="card">
-          <div class="card-title gym">Split-Startdatum</div>
-          <div class="form-group" style="margin-bottom:10px">
-            <label>Erster Oberkörper-Tag</label>
-            <input type="date" id="splitStartDate" oninput="saveSplitStart()">
-          </div>
-          <div style="font-size:12px;color:var(--text3);line-height:1.6">Einmal einstellen — wird in der Cloud gespeichert.</div>
-        </div>
-        <div class="card">
-          <div class="card-title gym">Volumen OK vs UK</div>
-          <div class="chart-wrap" style="height:160px"><canvas id="gymChart"></canvas></div>
-        </div>
+      <div class="topbar-right">
+        <div class="chip" id="kwChip"></div>
+        <div class="chip green" id="syncChip">Cloud-Sync aktiv</div>
+        <button class="btn-cancel" style="font-size:11px;padding:5px 12px;border-radius:20px" onclick="openModal()">Daten löschen</button>
       </div>
     </div>
 
-    <!-- LAUFEN -->
-    <div class="panel run-panel" id="runPanel">
-      <div class="card" style="margin-bottom:16px;border-color:#FC4C0230;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 18px">
-        <div style="display:flex;align-items:center;gap:14px">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
-          <div>
-            <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FC4C02">Strava Sync</div>
-            <div id="stravaStatus" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);margin-top:2px">Nicht verbunden</div>
-          </div>
-        </div>
-        <button id="stravaConnectBtn" style="padding:7px 16px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:#FC4C02;color:#fff">Verbinden</button>
-      </div>
-      <div class="stat-row">
-        <div class="stat run"><div class="stat-val" id="runKm">0</div><div class="stat-lbl">km gesamt</div></div>
-        <div class="stat run"><div class="stat-val" id="runSessions">0</div><div class="stat-lbl">Läufe</div></div>
-        <div class="stat run"><div class="stat-val" id="runAvgPace">—</div><div class="stat-lbl">Letzter Pace</div></div>
-      </div>
-      <div class="section-grid">
-        <div class="card">
-          <div class="card-title run">Lauf eintragen</div>
-          <div class="form-row">
-            <div class="form-group"><label>Distanz (km)</label><input type="number" id="runDistance" placeholder="5.0" step="0.1" min="0"></div>
-            <div class="form-group"><label>Zeit (mm:ss)</label><input type="text" id="runTime" placeholder="25:00"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Lauftyp</label>
-              <select id="runType"><option>Lockerer Lauf</option><option>Tempo-Lauf</option><option>Intervalle</option><option>Langer Lauf</option><option>Wettkampf</option></select>
-            </div>
-            <div class="form-group"><label>Herzfrequenz Ø</label><input type="number" id="runHR" placeholder="155" min="60" max="220"></div>
-          </div>
-          <div class="form-group" style="margin-bottom:10px">
-            <label>Gefühl (1–5)</label>
-            <input type="range" id="runFeel" min="1" max="5" value="3" step="1" oninput="document.getElementById('runFeelVal').textContent=this.value">
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:3px">
-              <span>😩 Schwer</span><span id="runFeelVal" style="color:var(--pink);font-weight:700">3</span><span>🚀 Top</span>
-            </div>
-          </div>
-          <button class="btn btn-run" id="runSubmitBtn" onclick="addRunEntry()">Eintragen</button>
-        </div>
-        <div class="card">
-          <div class="card-title run">Letzte Läufe</div>
-          <div class="exercise-log" id="runLog"><div class="empty-state">Noch keine Läufe</div></div>
-        </div>
-        <div class="card card-full">
-          <div class="card-title run">Distanz-Verlauf</div>
-          <div class="chart-wrap" style="height:200px"><canvas id="runChart"></canvas></div>
-        </div>
-      </div>
-    </div>
+    <div class="content">
 
-    <!-- ERNÄHRUNG -->
-    <div class="panel food-panel" id="foodPanel">
-      <div class="macro-goal-grid">
-        <div class="macro-goal-item"><div class="macro-goal-val" style="color:var(--yellow)">3700</div><div class="macro-goal-lbl">kcal Ziel</div><div class="macro-goal-sub">Muskelaufbau</div></div>
-        <div class="macro-goal-item"><div class="macro-goal-val" style="color:var(--orange)">200g</div><div class="macro-goal-lbl">Protein</div><div class="macro-goal-sub">2,1g / kg KG</div></div>
-        <div class="macro-goal-item"><div class="macro-goal-val" style="color:var(--cyan)">430g</div><div class="macro-goal-lbl">Kohlenhydrate</div><div class="macro-goal-sub">~46% der kcal</div></div>
-        <div class="macro-goal-item"><div class="macro-goal-val" style="color:var(--purple)">95g</div><div class="macro-goal-lbl">Fett</div><div class="macro-goal-sub">~1g / kg KG</div></div>
-      </div>
-      <div class="section-grid">
-        <div class="card">
-          <div class="card-title food">Mahlzeit eintragen</div>
-          <div class="form-row">
-            <div class="form-group"><label>Mahlzeit</label><input type="text" id="foodName" placeholder="z.B. Hähnchenbrust mit Reis"></div>
-            <div class="form-group"><label>Typ</label>
-              <select id="foodType"><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option>Snack</option></select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Kalorien (kcal)</label><input type="number" id="foodCalories" placeholder="500" min="0"></div>
-            <div class="form-group"><label>Protein (g)</label><input type="number" id="foodProteinG" placeholder="40" min="0"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Kohlenhydrate (g)</label><input type="number" id="foodCarbs" placeholder="80" min="0"></div>
-            <div class="form-group"><label>Fett (g)</label><input type="number" id="foodFat" placeholder="20" min="0"></div>
-          </div>
-          <button class="btn btn-food" id="foodSubmitBtn" onclick="addFoodEntry()">Eintragen</button>
-        </div>
-        <div class="card">
-          <div class="card-title food">Heutiger Fortschritt</div>
-          <div class="progress-row">
-            <div class="progress-label-row"><span style="color:var(--text2)">Kalorien</span><span id="kcalBar" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--yellow)">0 / 3700 kcal</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="kcalFill" style="background:var(--yellow);width:0%"></div></div>
-          </div>
-          <div class="progress-row">
-            <div class="progress-label-row"><span style="color:var(--text2)">Protein</span><span id="protBar" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange)">0 / 200g</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="protFill" style="background:var(--orange);width:0%"></div></div>
-          </div>
-          <div class="progress-row">
-            <div class="progress-label-row"><span style="color:var(--text2)">Kohlenhydrate</span><span id="carbBar" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">0 / 430g</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="carbFill" style="background:var(--cyan);width:0%"></div></div>
-          </div>
-          <div class="progress-row">
-            <div class="progress-label-row"><span style="color:var(--text2)">Fett</span><span id="fatBar" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple)">0 / 95g</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="fatFill" style="background:var(--purple);width:0%"></div></div>
-          </div>
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;color:var(--text3)">
-            <span>Verbleibend</span><span id="kcalLeft" style="font-family:'JetBrains Mono',monospace;color:var(--yellow)">3700 kcal</span>
-          </div>
-        </div>
-        <div class="card card-full">
-          <div class="card-title food">Mahlzeiten heute</div>
-          <div class="exercise-log" id="foodLog"><div class="empty-state">Noch keine Mahlzeiten</div></div>
-        </div>
-        <div class="card card-full">
-          <div class="card-title food">Körpergewicht tracken</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div>
-              <div class="weight-entry-row">
-                <div class="form-group" style="flex:1"><label>Gewicht diese Woche (kg)</label><input type="number" id="weightInput" placeholder="95.0" step="0.1" min="50" max="200"></div>
-                <button class="btn-sm" onclick="addWeightEntry()">Eintragen</button>
+      <!-- OVERVIEW -->
+      <div class="page active" id="page-overview">
+        <div class="grid-3">
+          <div class="stat-card c-cyan" onclick="navigate('gym')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Gym · Einträge gesamt</div>
+                <div class="card-val" style="color:var(--cyan)" id="ov-gym-val">0</div>
+                <div class="card-sub" id="ov-gym-sub">Noch keine Einträge</div>
               </div>
-              <div style="font-size:12px;color:var(--text3);line-height:1.6">Einmal pro Woche morgens nüchtern wiegen.</div>
-              <div style="margin-top:14px">
-                <div class="card-title food" style="margin-bottom:8px">Verlauf</div>
-                <div class="exercise-log" style="max-height:160px" id="weightLog"><div class="empty-state">Noch keine Einträge</div></div>
+              <div class="card-icon" style="background:#00f5d412;border:1px solid #00f5d425">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
               </div>
             </div>
-            <div>
-              <div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Gewichtsverlauf</div>
-              <div class="chart-wrap" style="height:200px"><canvas id="weightChart"></canvas></div>
+            <canvas id="ovGymChart" class="mini-chart"></canvas>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="cbadge cb-up" id="ov-gym-badge">–</span>
+              <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
             </div>
+          </div>
+
+          <div class="stat-card c-pink" onclick="navigate('run')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Laufen · km gesamt</div>
+                <div class="card-val" style="color:var(--pink)" id="ov-run-val">0</div>
+                <div class="card-sub" id="ov-run-sub">Noch keine Läufe</div>
+              </div>
+              <div class="card-icon" style="background:#f7258512;border:1px solid #f7258525">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.5"/><path d="m7 21 3-6m0 0 2-4 3 2 2-6M10 15l-3-3 2-2"/></svg>
+              </div>
+            </div>
+            <canvas id="ovRunChart" class="mini-chart"></canvas>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="cbadge cb-up" id="ov-run-badge">–</span>
+              <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
+            </div>
+          </div>
+
+          <div class="stat-card c-yellow" onclick="navigate('food')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Ernährung · Heute</div>
+                <div class="card-val" style="color:var(--yellow)" id="ov-food-val">0</div>
+                <div class="card-sub">kcal · Ziel: 3.700</div>
+              </div>
+              <div class="card-icon" style="background:#ffd60a12;border:1px solid #ffd60a25">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 5 6 5 10c0 5 7 12 7 12s7-7 7-12c0-4-3-8-7-8z"/><circle cx="12" cy="10" r="2"/></svg>
+              </div>
+            </div>
+            <div class="pbar" style="margin-bottom:10px;margin-top:14px"><div class="pfill" id="ov-food-bar" style="background:var(--yellow);width:0%"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="cbadge cb-warn" id="ov-food-badge">0 kcal verbleibend</span>
+              <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
+            </div>
+          </div>
+
+          <div class="stat-card c-purple" onclick="navigate('weight')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Körpergewicht · Aktuell</div>
+                <div class="card-val" style="color:var(--purple)" id="ov-weight-val">–</div>
+                <div class="card-sub" id="ov-weight-sub">Noch keine Einträge</div>
+              </div>
+              <div class="card-icon" style="background:#7b2fff12;border:1px solid #7b2fff25">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h12M4 10h16l-2 8H6l-2-8z"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>
+              </div>
+            </div>
+            <canvas id="ovWeightChart" class="mini-chart"></canvas>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="cbadge cb-down" id="ov-weight-badge">–</span>
+              <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
+            </div>
+          </div>
+
+          <div class="stat-card c-strava" onclick="navigate('run')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Strava · Letzter Lauf</div>
+                <div class="card-val" style="color:var(--strava)" id="ov-strava-val">–</div>
+                <div class="card-sub" id="ov-strava-sub">Nicht verbunden</div>
+              </div>
+              <div class="card-icon" style="background:#FC4C0212;border:1px solid #FC4C0225">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--strava)"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+              </div>
+            </div>
+            <div id="ov-strava-status" style="margin-top:10px;margin-bottom:10px"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="cbadge cb-neutral" id="ov-strava-badge">–</span>
+              <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
+            </div>
+          </div>
+
+          <div class="stat-card c-blue" onclick="navigate('gym')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div class="card-label">Split · Heute</div>
+                <div class="card-val" style="color:#60a5fa;font-size:20px" id="ov-split-val">–</div>
+                <div class="card-sub" id="ov-split-sub">Startdatum einstellen</div>
+              </div>
+              <div class="card-icon" style="background:#3b82f612;border:1px solid #3b82f625">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </div>
+            </div>
+            <div id="ov-split-days" style="display:flex;gap:6px;margin-top:14px"></div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <div class="section-title">Heute im Detail</div>
+        </div>
+        <div class="grid-2">
+          <div class="scard">
+            <div class="scard-title yellow">Makros heute</div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Kalorien</span><span class="prog-val" style="color:var(--yellow)" id="ov-kcal-bar">0 / 3700 kcal</span></div>
+              <div class="pbar"><div class="pfill" id="ov-kcal-fill" style="background:var(--yellow);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Protein</span><span class="prog-val" style="color:var(--orange)" id="ov-prot-bar">0 / 200g</span></div>
+              <div class="pbar"><div class="pfill" id="ov-prot-fill" style="background:var(--orange);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Kohlenhydrate</span><span class="prog-val" style="color:var(--cyan)" id="ov-carb-bar">0 / 430g</span></div>
+              <div class="pbar"><div class="pfill" id="ov-carb-fill" style="background:var(--cyan);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Fett</span><span class="prog-val" style="color:var(--purple)" id="ov-fat-bar">0 / 95g</span></div>
+              <div class="pbar"><div class="pfill" id="ov-fat-fill" style="background:var(--purple);width:0%"></div></div>
+            </div>
+          </div>
+          <div class="scard">
+            <div class="scard-title cyan">Letzte Aktivitäten</div>
+            <div class="log-list" id="ov-activity-log"><div class="empty-state">Noch keine Aktivitäten</div></div>
           </div>
         </div>
       </div>
-    </div>
 
+      <!-- GYM PAGE -->
+      <div class="page" id="page-gym">
+        <div class="split-banner" id="splitBanner"></div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--cyan)" id="gymSessions">0</div><div class="stat-box-lbl">Einträge</div></div>
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--cyan)" id="gymVolume">0</div><div class="stat-box-lbl">kg Volumen</div></div>
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--yellow)" id="gymPRs">0</div><div class="stat-box-lbl">PRs gesamt</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="scard">
+            <div class="scard-title cyan">Übung eintragen</div>
+            <div class="form-row">
+              <div class="form-group"><label>Split-Tag</label>
+                <select id="gymDayType" onchange="updateExerciseList()">
+                  <option value="upper">Oberkörper</option><option value="lower">Unterkörper</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Übung</label><select id="gymExercise"></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="gymWeight" placeholder="60" min="0" step="2.5"></div>
+              <div class="form-group"><label>Sätze × Wiederholungen</label><input type="text" id="gymSetsReps" placeholder="3×10"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>PR? 🏆</label>
+                <select id="gymPR"><option value="0">Nein</option><option value="1">Ja — neuer PR!</option></select>
+              </div>
+              <div class="form-group"><label>Notiz</label><input type="text" id="gymNote" placeholder="Optional..."></div>
+            </div>
+            <button class="btn btn-cyan" id="gymSubmitBtn" onclick="addGymEntry()">Eintragen</button>
+          </div>
+          <div class="scard">
+            <div class="scard-title cyan">Letzte Einträge</div>
+            <div class="log-list" id="gymLog"><div class="empty-state">Noch keine Einträge</div></div>
+          </div>
+          <div class="scard">
+            <div class="scard-title cyan">Split-Startdatum</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Erster Oberkörper-Tag</label>
+              <input type="date" id="splitStartDate" oninput="saveSplitStart()">
+            </div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6">Einmal einstellen — wird in der Cloud gespeichert.</div>
+          </div>
+          <div class="scard">
+            <div class="scard-title cyan">Volumen OK vs UK</div>
+            <div style="height:160px;position:relative"><canvas id="gymChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUN PAGE -->
+      <div class="page" id="page-run">
+        <div class="scard" style="margin-bottom:16px;border-color:#FC4C0225">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--strava)"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+              <div>
+                <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--strava)">Strava Sync</div>
+                <div id="stravaStatus" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);margin-top:2px">Nicht verbunden</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="stravaSyncBtn" style="display:none;padding:7px 14px;border-radius:8px;border:1px solid #FC4C0240;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--strava)" onclick="stravaSync(true)">Sync</button>
+              <button id="stravaConnectBtn" style="padding:7px 16px;border-radius:8px;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--strava);color:#fff">Verbinden</button>
+            </div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--pink)" id="runKm">0</div><div class="stat-box-lbl">km gesamt</div></div>
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--pink)" id="runSessions">0</div><div class="stat-box-lbl">Läufe</div></div>
+          <div class="stat-box"><div class="stat-box-val" style="color:var(--pink)" id="runAvgPace">–</div><div class="stat-box-lbl">Letzter Pace</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="scard">
+            <div class="scard-title pink">Lauf eintragen</div>
+            <div class="form-row">
+              <div class="form-group"><label>Distanz (km)</label><input type="number" id="runDistance" placeholder="5.0" step="0.1" min="0"></div>
+              <div class="form-group"><label>Zeit (mm:ss)</label><input type="text" id="runTime" placeholder="25:00"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Lauftyp</label>
+                <select id="runType"><option>Lockerer Lauf</option><option>Tempo-Lauf</option><option>Intervalle</option><option>Langer Lauf</option><option>Wettkampf</option></select>
+              </div>
+              <div class="form-group"><label>Herzfrequenz Ø</label><input type="number" id="runHR" placeholder="155" min="60" max="220"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Gefühl (1–5)</label>
+              <input type="range" id="runFeel" min="1" max="5" value="3" step="1" oninput="document.getElementById('runFeelVal').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:3px">
+                <span>😩 Schwer</span><span id="runFeelVal" style="color:var(--pink);font-weight:700">3</span><span>🚀 Top</span>
+              </div>
+            </div>
+            <button class="btn btn-pink" id="runSubmitBtn" onclick="addRunEntry()">Eintragen</button>
+          </div>
+          <div class="scard">
+            <div class="scard-title pink">Letzte Läufe</div>
+            <div class="log-list" id="runLog"><div class="empty-state">Noch keine Läufe</div></div>
+          </div>
+          <div class="scard col-full">
+            <div class="scard-title pink">Distanz-Verlauf</div>
+            <div style="height:200px;position:relative"><canvas id="runChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOD PAGE -->
+      <div class="page" id="page-food">
+        <div class="macro-goal-grid">
+          <div class="macro-goal-item c-yellow"><div class="macro-goal-val" style="color:var(--yellow)">3700</div><div class="macro-goal-lbl">kcal Ziel</div><div class="macro-goal-sub">Muskelaufbau</div></div>
+          <div class="macro-goal-item c-orange"><div class="macro-goal-val" style="color:var(--orange)">200g</div><div class="macro-goal-lbl">Protein</div><div class="macro-goal-sub">2,1g / kg KG</div></div>
+          <div class="macro-goal-item c-cyan"><div class="macro-goal-val" style="color:var(--cyan)">430g</div><div class="macro-goal-lbl">Kohlenhydrate</div><div class="macro-goal-sub">~46% der kcal</div></div>
+          <div class="macro-goal-item c-purple"><div class="macro-goal-val" style="color:var(--purple)">95g</div><div class="macro-goal-lbl">Fett</div><div class="macro-goal-sub">~1g / kg KG</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="scard">
+            <div class="scard-title yellow">Mahlzeit eintragen</div>
+            <div class="form-row">
+              <div class="form-group"><label>Mahlzeit</label><input type="text" id="foodName" placeholder="z.B. Hähnchenbrust mit Reis"></div>
+              <div class="form-group"><label>Typ</label>
+                <select id="foodType"><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option>Snack</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Kalorien (kcal)</label><input type="number" id="foodCalories" placeholder="500" min="0"></div>
+              <div class="form-group"><label>Protein (g)</label><input type="number" id="foodProteinG" placeholder="40" min="0"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Kohlenhydrate (g)</label><input type="number" id="foodCarbs" placeholder="80" min="0"></div>
+              <div class="form-group"><label>Fett (g)</label><input type="number" id="foodFat" placeholder="20" min="0"></div>
+            </div>
+            <button class="btn btn-yellow" id="foodSubmitBtn" onclick="addFoodEntry()">Eintragen</button>
+          </div>
+          <div class="scard">
+            <div class="scard-title yellow">Heutiger Fortschritt</div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Kalorien</span><span class="prog-val" style="color:var(--yellow)" id="kcalBar">0 / 3700 kcal</span></div>
+              <div class="pbar"><div class="pfill" id="kcalFill" style="background:var(--yellow);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Protein</span><span class="prog-val" style="color:var(--orange)" id="protBar">0 / 200g</span></div>
+              <div class="pbar"><div class="pfill" id="protFill" style="background:var(--orange);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Kohlenhydrate</span><span class="prog-val" style="color:var(--cyan)" id="carbBar">0 / 430g</span></div>
+              <div class="pbar"><div class="pfill" id="carbFill" style="background:var(--cyan);width:0%"></div></div>
+            </div>
+            <div class="prog-row">
+              <div class="prog-label"><span>Fett</span><span class="prog-val" style="color:var(--purple)" id="fatBar">0 / 95g</span></div>
+              <div class="pbar"><div class="pfill" id="fatFill" style="background:var(--purple);width:0%"></div></div>
+            </div>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;color:var(--text3)">
+              <span>Verbleibend</span><span id="kcalLeft" style="font-family:'JetBrains Mono',monospace;color:var(--yellow)">3700 kcal</span>
+            </div>
+          </div>
+          <div class="scard col-full">
+            <div class="scard-title yellow">Mahlzeiten heute</div>
+            <div class="log-list" id="foodLog"><div class="empty-state">Noch keine Mahlzeiten</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEIGHT PAGE -->
+      <div class="page" id="page-weight">
+        <div class="grid-2">
+          <div class="scard">
+            <div class="scard-title purple">Gewicht eintragen</div>
+            <div class="weight-entry-row">
+              <div class="form-group" style="flex:1"><label>Gewicht diese Woche (kg)</label><input type="number" id="weightInput" placeholder="95.0" step="0.1" min="50" max="200"></div>
+              <button class="btn-sm2" onclick="addWeightEntry()">Eintragen</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:16px">Einmal pro Woche morgens nüchtern wiegen für aussagekräftige Werte.</div>
+            <div class="scard-title purple">Verlauf</div>
+            <div class="log-list" id="weightLog"><div class="empty-state">Noch keine Einträge</div></div>
+          </div>
+          <div class="scard">
+            <div class="scard-title purple">Gewichtsverlauf</div>
+            <div style="height:260px;position:relative"><canvas id="weightChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
 <script>
-// ─── SUPABASE SETUP ───────────────────────────────────────────────
-const SUPABASE_URL = 'https://jduosffugmhygjvrhdas.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdW9zZmZ1Z21oeWdqdnJoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzI4MzksImV4cCI6MjA5NDE0ODgzOX0.jFvzSvkJGmKkm7gMw9Z414Xiq42WDljzAVbweDU1Y7o';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-});
+const SUPABASE_URL='https://jduosffugmhygjvrhdas.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdW9zZmZ1Z21oeWdqdnJoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzI4MzksImV4cCI6MjA5NDE0ODgzOX0.jFvzSvkJGmKkm7gMw9Z414Xiq42WDljzAVbweDU1Y7o';
+const{createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-// Holt immer eine frische Session - verhindert Auth-Timeouts
-async function freshInsert(table, payload) {
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) throw new Error('Keine Session');
-  currentUser = session.user;
-  return db.from(table).insert({ ...payload, user_id: currentUser.id }).select();
-}
-
-const GOALS = {kcal:3700,prot:200,carbs:430,fat:95};
-const EXERCISES = {
-  upper:[
-    {name:'Schrägbankdrücken',muscle:'Brust'},{name:'Butterflies',muscle:'Brust'},
-    {name:'Latzug',muscle:'Rücken'},{name:'T-Bar-Row',muscle:'Rücken'},
-    {name:'Side Raises',muscle:'Schultern'},
-    {name:'Triceps Pushdown',muscle:'Arme'},{name:'Overhead Triceps Extension (Kabel)',muscle:'Arme'},
-    {name:'Einseitige Cable Curls',muscle:'Arme'},{name:'Preacher Curls',muscle:'Arme'}
-  ],
-  lower:[
-    {name:'RDL',muscle:'Hinten'},{name:'Pendulum Squats',muscle:'Vorne'},
-    {name:'Beinbeuger liegend',muscle:'Hinten'},{name:'Beinstrecker',muscle:'Vorne'},
-    {name:'Calf Raises',muscle:'Wade'}
-  ]
+const GOALS={kcal:3700,prot:200,carbs:430,fat:95};
+const EXERCISES={
+  upper:[{name:'Schrägbankdrücken',muscle:'Brust'},{name:'Butterflies',muscle:'Brust'},{name:'Latzug',muscle:'Rücken'},{name:'T-Bar-Row',muscle:'Rücken'},{name:'Side Raises',muscle:'Schultern'},{name:'Triceps Pushdown',muscle:'Arme'},{name:'Overhead Triceps Extension (Kabel)',muscle:'Arme'},{name:'Einseitige Cable Curls',muscle:'Arme'},{name:'Preacher Curls',muscle:'Arme'}],
+  lower:[{name:'RDL',muscle:'Hinten'},{name:'Pendulum Squats',muscle:'Vorne'},{name:'Beinbeuger liegend',muscle:'Hinten'},{name:'Beinstrecker',muscle:'Vorne'},{name:'Calf Raises',muscle:'Wade'}]
 };
+const STRAVA_CLIENT_ID='244033';
+const STRAVA_CLIENT_SECRET='32a0ba6b3e7a8235a1366d1ab4c320d8e9e3c8aa';
+const STRAVA_REDIRECT='https://trackfit-dashboard.netlify.app/';
+const STRAVA_AUTH_URL=`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all&approval_prompt=auto`;
 
-let currentUser = null;
-let gymData = [], runData = [], foodData = [], weightData = [];
-let gymChart = null, runChart = null, weightChart = null;
-let authMode = 'login';
+let currentUser=null,gymData=[],runData=[],foodData=[],weightData=[],stravaTokens=null;
+let gymChart=null,runChart=null,weightChart=null,ovGymChart=null,ovRunChart=null,ovWeightChart=null;
+let authMode='login';
 
-const STRAVA_CLIENT_ID = '244033';
-const STRAVA_CLIENT_SECRET = '32a0ba6b3e7a8235a1366d1ab4c320d8e9e3c8aa';
-const STRAVA_REDIRECT = 'https://trackfit-dashboard.netlify.app/';
-const STRAVA_AUTH_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all&approval_prompt=auto`;
-let stravaTokens = null;
+const pageTitles={overview:'Overview',gym:'Gym',run:'Laufen',food:'Ernährung',weight:'Körpergewicht'};
 
-document.getElementById('currentDate').textContent = new Date().toLocaleDateString('de-DE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-
-// ─── AUTH ─────────────────────────────────────────────────────────
-function switchAuthTab(mode) {
-  authMode = mode;
-  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
-  document.getElementById('tabRegister').classList.toggle('active', mode==='register');
-  document.getElementById('authBtn').textContent = mode==='login' ? 'Anmelden' : 'Registrieren';
-  document.getElementById('authMsg').style.display = 'none';
+function initDateDisplay(){
+  const now=new Date();
+  document.getElementById('pageDate').textContent=now.toLocaleDateString('de-DE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const jan1=new Date(now.getFullYear(),0,1);
+  const kw=Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);
+  document.getElementById('kwChip').textContent=`KW ${kw} · ${now.getFullYear()}`;
 }
 
-function showAuthMsg(msg, type) {
-  const el = document.getElementById('authMsg');
-  el.textContent = msg;
-  el.className = `auth-msg ${type}`;
-  el.style.display = 'block';
+async function freshInsert(table,payload){
+  const{data:{session}}=await db.auth.getSession();
+  if(!session)throw new Error('Keine Session');
+  currentUser=session.user;
+  return db.from(table).insert({...payload,user_id:currentUser.id}).select();
 }
 
-async function handleAuth() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  if (!email || !password) { showAuthMsg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
-  const btn = document.getElementById('authBtn');
-  btn.disabled = true; btn.textContent = '...';
-  try {
-    if (authMode === 'login') {
-      const { error } = await db.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } else {
-      const { error } = await db.auth.signUp({ email, password });
-      if (error) throw error;
-      showAuthMsg('Registrierung erfolgreich! Bitte E-Mail bestätigen falls nötig.', 'success');
-      btn.disabled = false; btn.textContent = 'Registrieren'; return;
+function switchAuthTab(mode){
+  authMode=mode;
+  document.getElementById('tabLogin').classList.toggle('active',mode==='login');
+  document.getElementById('tabRegister').classList.toggle('active',mode==='register');
+  document.getElementById('authBtn').textContent=mode==='login'?'Anmelden':'Registrieren';
+  document.getElementById('authMsg').style.display='none';
+}
+
+function showAuthMsg(msg,type){
+  const el=document.getElementById('authMsg');
+  el.textContent=msg;el.className=`auth-msg ${type}`;el.style.display='block';
+}
+
+async function handleAuth(){
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  if(!email||!password){showAuthMsg('Bitte E-Mail und Passwort eingeben.','error');return;}
+  const btn=document.getElementById('authBtn');
+  btn.disabled=true;btn.textContent='...';
+  try{
+    if(authMode==='login'){
+      const{error}=await db.auth.signInWithPassword({email,password});
+      if(error)throw error;
+    }else{
+      const{error}=await db.auth.signUp({email,password});
+      if(error)throw error;
+      showAuthMsg('Registrierung erfolgreich! Bitte E-Mail bestätigen falls nötig.','success');
+      btn.disabled=false;btn.textContent='Registrieren';return;
     }
-  } catch(e) {
-    showAuthMsg(e.message || 'Fehler beim Anmelden.', 'error');
-    btn.disabled = false;
-    btn.textContent = authMode === 'login' ? 'Anmelden' : 'Registrieren';
+  }catch(e){
+    showAuthMsg(e.message||'Fehler beim Anmelden.','error');
+    btn.disabled=false;btn.textContent=authMode==='login'?'Anmelden':'Registrieren';
   }
 }
 
-async function handleLogout() {
+async function handleLogout(){
   await db.auth.signOut();
-  currentUser = null;
-  gymData=[]; runData=[]; foodData=[]; weightData=[];
+  currentUser=null;gymData=[];runData=[];foodData=[];weightData=[];
   document.getElementById('dashboard').classList.remove('visible');
-  document.getElementById('authScreen').style.display = 'flex';
-  document.getElementById('authEmail').value = '';
-  document.getElementById('authPassword').value = '';
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('authEmail').value='';
+  document.getElementById('authPassword').value='';
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────
-async function init() {
-  const { data: { session } } = await db.auth.getSession();
-  document.getElementById('loadingScreen').style.display = 'none';
-  if (session?.user) {
-    currentUser = session.user;
-    await showDashboard();
-  } else {
-    document.getElementById('authScreen').style.display = 'flex';
-  }
-  db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      currentUser = session.user;
-      document.getElementById('authScreen').style.display = 'none';
+async function init(){
+  const{data:{session}}=await db.auth.getSession();
+  document.getElementById('loadingScreen').style.display='none';
+  if(session?.user){currentUser=session.user;await showDashboard();}
+  else{document.getElementById('authScreen').style.display='flex';}
+  db.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_IN'&&session?.user){
+      currentUser=session.user;
+      document.getElementById('authScreen').style.display='none';
       await showDashboard();
     }
   });
 }
 
-async function showDashboard() {
-  document.getElementById('userChip').textContent = currentUser.email;
+async function showDashboard(){
+  const email=currentUser.email;
+  document.getElementById('userChip').textContent=email;
+  const initials=email.split('@')[0].slice(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent=initials;
   document.getElementById('dashboard').classList.add('visible');
-  setSyncState('syncing', 'Daten werden geladen...');
+  initDateDisplay();
   updateExerciseList();
-
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code && params.get('scope')) {
-    window.history.replaceState({}, '', window.location.pathname);
-    setSyncState('syncing', 'Strava wird verbunden...');
+  setSyncState('syncing','Daten werden geladen...');
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code');
+  if(code&&params.get('scope')){
+    window.history.replaceState({},'',window.location.pathname);
+    setSyncState('syncing','Strava wird verbunden...');
     await stravaExchangeCode(code);
   }
-
   await loadAllData();
-  setSyncState('synced', 'Cloud-Sync aktiv ✓');
+  setSyncState('synced','Cloud-Sync aktiv');
 }
 
-function setSyncState(state, text) {
-  const ind = document.getElementById('syncIndicator');
-  const txt = document.getElementById('syncText');
-  ind.className = `sync-indicator ${state}`;
-  txt.textContent = text;
-  if (state === 'synced') setTimeout(() => { ind.className='sync-indicator'; txt.textContent='Cloud-Sync aktiv'; }, 3000);
+function setSyncState(state,text){
+  const chip=document.getElementById('syncChip');
+  const dot=document.getElementById('syncDot');
+  if(state==='syncing'){chip.className='chip yellow';chip.textContent=text;dot.style.background='var(--yellow)';}
+  else{chip.className='chip green';chip.textContent=text;dot.style.background='var(--green)';}
 }
 
-// ─── DATA LOADING ─────────────────────────────────────────────────
-async function loadAllData() {
-  const uid = currentUser.id;
-  const today = new Date().toISOString().split('T')[0];
-
-  const [gym, run, food, weight, settings] = await Promise.all([
-    db.from('gym_entries').select('*').eq('user_id', uid).order('logged_at', {ascending:false}),
-    db.from('run_entries').select('*').eq('user_id', uid).order('logged_at', {ascending:false}),
-    db.from('food_entries').select('*').eq('user_id', uid).order('logged_at', {ascending:false}),
-    db.from('weight_entries').select('*').eq('user_id', uid).order('logged_at', {ascending:true}),
-    db.from('user_settings').select('*').eq('user_id', uid).single()
+async function loadAllData(){
+  const uid=currentUser.id;
+  const[gym,run,food,weight,settings]=await Promise.all([
+    db.from('gym_entries').select('*').eq('user_id',uid).order('logged_at',{ascending:false}),
+    db.from('run_entries').select('*').eq('user_id',uid).order('logged_at',{ascending:false}),
+    db.from('food_entries').select('*').eq('user_id',uid).order('logged_at',{ascending:false}),
+    db.from('weight_entries').select('*').eq('user_id',uid).order('logged_at',{ascending:true}),
+    db.from('user_settings').select('*').eq('user_id',uid).single()
   ]);
-
-  gymData = gym.data || [];
-  runData = run.data || [];
-  foodData = food.data || [];
-  weightData = weight.data || [];
-
-  if (settings.data?.split_start_date) {
-    document.getElementById('splitStartDate').value = settings.data.split_start_date;
+  gymData=gym.data||[];runData=run.data||[];foodData=food.data||[];weightData=weight.data||[];
+  if(settings.data?.split_start_date)document.getElementById('splitStartDate').value=settings.data.split_start_date;
+  if(settings.data?.strava_access_token){
+    stravaTokens={access_token:settings.data.strava_access_token,refresh_token:settings.data.strava_refresh_token,expires_at:settings.data.strava_expires_at,athlete_id:settings.data.strava_athlete_id};
   }
-  if (settings.data?.strava_access_token) {
-    stravaTokens = {
-      access_token: settings.data.strava_access_token,
-      refresh_token: settings.data.strava_refresh_token,
-      expires_at: settings.data.strava_expires_at,
-      athlete_id: settings.data.strava_athlete_id
-    };
-  }
-
-  updateGymStats(); renderGymLog(); renderGymChart();
-  updateRunStats(); renderRunLog(); renderRunChart();
-  updateFoodStats(); renderFoodLog();
-  renderWeightLog(); renderWeightChart();
-  renderSplitBanner();
+  renderAll();
   updateStravaUI();
-  if (stravaTokens) stravaSync(false).catch(console.error);
+  if(stravaTokens)stravaSync(false).catch(console.error);
 }
 
-// ─── SPLIT ────────────────────────────────────────────────────────
-async function saveSplitStart() {
-  const val = document.getElementById('splitStartDate').value;
-  if (!val) return;
-  await db.from('user_settings').upsert({ user_id: currentUser.id, split_start_date: val, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+function renderAll(){
+  renderGymStats();renderGymLog();renderGymChart();
+  renderRunStats();renderRunLog();renderRunChart();
+  renderFoodStats();renderFoodLog();
+  renderWeightLog();renderWeightChart();
   renderSplitBanner();
+  renderOverview();
 }
 
-function getSplitDay() {
-  const val = document.getElementById('splitStartDate').value;
-  if (!val) return null;
-  const s = new Date(val), t = new Date();
-  s.setHours(0,0,0,0); t.setHours(0,0,0,0);
-  const diff = Math.round((t-s)/86400000);
-  if (diff < 0) return null;
+function navigate(page){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const nav=document.querySelector(`.nav-item[data-page="${page}"]`);
+  if(nav)nav.classList.add('active');
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  const p=document.getElementById('page-'+page);
+  if(p)p.classList.add('active');
+  document.getElementById('pageTitle').textContent=pageTitles[page]||page;
+  if(page==='gym'){renderGymChart();}
+  if(page==='run'){renderRunChart();}
+  if(page==='weight'){renderWeightChart();}
+  if(page==='overview'){renderOverview();}
+}
+
+function updateExerciseList(){
+  const dt=document.getElementById('gymDayType').value;
+  const sel=document.getElementById('gymExercise');
+  sel.innerHTML='';
+  const groups={};
+  EXERCISES[dt].forEach(e=>{if(!groups[e.muscle])groups[e.muscle]=[];groups[e.muscle].push(e.name);});
+  Object.entries(groups).forEach(([m,names])=>{
+    const g=document.createElement('optgroup');g.label=m;
+    names.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;g.appendChild(o);});
+    sel.appendChild(g);
+  });
+}
+
+async function saveSplitStart(){
+  const val=document.getElementById('splitStartDate').value;
+  if(!val)return;
+  await db.from('user_settings').upsert({user_id:currentUser.id,split_start_date:val,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  renderSplitBanner();renderOverview();
+}
+
+function getSplitDay(){
+  const val=document.getElementById('splitStartDate').value;
+  if(!val)return null;
+  const s=new Date(val),t=new Date();
+  s.setHours(0,0,0,0);t.setHours(0,0,0,0);
+  const diff=Math.round((t-s)/86400000);
+  if(diff<0)return null;
   return diff%3===0?'upper':diff%3===1?'lower':'rest';
 }
 
-function renderSplitBanner() {
-  const today = getSplitDay();
-  const days = [
+function renderSplitBanner(){
+  const today=getSplitDay();
+  const days=[
     {key:'upper',label:'Tag A',name:'Oberkörper',ex:EXERCISES.upper.map(e=>`<span>· ${e.name}</span>`).join('')},
     {key:'lower',label:'Tag B',name:'Unterkörper',ex:EXERCISES.lower.map(e=>`<span>· ${e.name}</span>`).join('')},
     {key:'rest',label:'Tag C',name:'Pause',ex:'<span>· Dehnen</span><span>· Spazieren</span><span>· Erholen</span>'}
   ];
-  document.getElementById('splitBanner').innerHTML = days.map(d => {
-    const it = today===d.key;
-    const cls = it ? (d.key==='upper'?'today-upper':d.key==='lower'?'today-lower':'today-rest') : '';
-    return `<div class="split-day ${cls}">
-      <div class="split-day-label">${d.label}${it?' · <span style="color:var(--green)">HEUTE</span>':''}</div>
+  document.getElementById('splitBanner').innerHTML=days.map(d=>{
+    const it=today===d.key;
+    const cls=it?(d.key==='upper'?'today-upper':d.key==='lower'?'today-lower':'today-rest'):'';
+    return`<div class="split-day ${cls}">
+      <div class="split-day-label">${d.label}${it?` · <span style="color:var(--green)">HEUTE</span>`:''}</div>
       <div class="split-day-name">${d.name}</div>
       <div class="split-exercises">${d.ex}</div>
     </div>`;
   }).join('');
 }
 
-function updateExerciseList() {
-  const dt = document.getElementById('gymDayType').value;
-  const sel = document.getElementById('gymExercise');
-  sel.innerHTML = '';
-  const groups = {};
-  EXERCISES[dt].forEach(e => { if(!groups[e.muscle]) groups[e.muscle]=[]; groups[e.muscle].push(e.name); });
-  Object.entries(groups).forEach(([m, names]) => {
-    const g = document.createElement('optgroup'); g.label = m;
-    names.forEach(n => { const o = document.createElement('option'); o.value=n; o.textContent=n; g.appendChild(o); });
-    sel.appendChild(g);
-  });
-}
-
-// ─── GYM ──────────────────────────────────────────────────────────
-async function addGymEntry() {
-  const ex = document.getElementById('gymExercise').value;
-  const wt = document.getElementById('gymWeight').value;
-  const sr = document.getElementById('gymSetsReps').value;
-  if (!ex||!wt||!sr) { alert('Bitte Übung, Gewicht und Sätze/Wiederholungen eingeben!'); return; }
-  const parts = sr.split('×');
-  const btn = document.getElementById('gymSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Wird gespeichert...';
-  setSyncState('syncing', 'Speichern...');
-  try {
-    const { data, error } = await freshInsert('gym_entries', {
-      exercise: ex,
-      weight: parseFloat(wt),
-      sets: parseInt(parts[0])||1,
-      reps: parseInt(parts[1])||1,
-      day_type: document.getElementById('gymDayType').value,
-      is_pr: document.getElementById('gymPR').value === '1',
-      note: document.getElementById('gymNote').value,
-      logged_at: new Date().toISOString()
+async function addGymEntry(){
+  const ex=document.getElementById('gymExercise').value;
+  const wt=document.getElementById('gymWeight').value;
+  const sr=document.getElementById('gymSetsReps').value;
+  if(!ex||!wt||!sr){alert('Bitte Übung, Gewicht und Sätze/Wiederholungen eingeben!');return;}
+  const parts=sr.split('×');
+  const btn=document.getElementById('gymSubmitBtn');
+  btn.disabled=true;btn.textContent='Speichern...';
+  setSyncState('syncing','Speichern...');
+  try{
+    const{data,error}=await freshInsert('gym_entries',{
+      exercise:ex,weight:parseFloat(wt),sets:parseInt(parts[0])||1,reps:parseInt(parts[1])||1,
+      day_type:document.getElementById('gymDayType').value,is_pr:document.getElementById('gymPR').value==='1',
+      note:document.getElementById('gymNote').value,logged_at:new Date().toISOString()
     });
-    if (error) throw error;
+    if(error)throw error;
     gymData.unshift(data[0]);
-    updateGymStats(); renderGymLog(); renderGymChart();
-    ['gymWeight','gymSetsReps','gymNote'].forEach(id => document.getElementById(id).value='');
+    renderGymStats();renderGymLog();renderGymChart();renderOverview();
+    ['gymWeight','gymSetsReps','gymNote'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('gymPR').value='0';
-    setSyncState('synced', 'Gespeichert ✓');
-  } catch(e) {
-    setSyncState('synced', 'Fehler: '+e.message);
-    alert('Fehler beim Speichern: '+e.message);
-  }
-  btn.disabled = false; btn.textContent = 'Eintragen';
+    setSyncState('synced','Gespeichert ✓');
+  }catch(e){setSyncState('synced','Fehler: '+e.message);alert('Fehler: '+e.message);}
+  btn.disabled=false;btn.textContent='Eintragen';
 }
 
-function updateGymStats() {
-  document.getElementById('gymSessions').textContent = gymData.length;
-  const vol = gymData.reduce((s,e) => s+(e.weight||0)*(e.reps||0)*(e.sets||0), 0);
-  document.getElementById('gymVolume').textContent = Math.round(vol);
-  document.getElementById('gymPRs').textContent = gymData.filter(e=>e.is_pr).length;
+function renderGymStats(){
+  document.getElementById('gymSessions').textContent=gymData.length;
+  const vol=gymData.reduce((s,e)=>s+(e.weight||0)*(e.reps||0)*(e.sets||0),0);
+  document.getElementById('gymVolume').textContent=Math.round(vol).toLocaleString('de-DE');
+  document.getElementById('gymPRs').textContent=gymData.filter(e=>e.is_pr).length;
 }
 
-function renderGymLog() {
-  const log = document.getElementById('gymLog');
-  if (!gymData.length) { log.innerHTML='<div class="empty-state">Noch keine Einträge</div>'; return; }
-  log.innerHTML = gymData.slice(0,12).map(e => {
-    const d = new Date(e.logged_at).toLocaleDateString('de-DE');
-    const t = new Date(e.logged_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="log-item">
-      <div><span class="log-item-name">${e.exercise}</span>${e.is_pr?'<span style="color:var(--yellow);margin-left:6px;font-size:12px">🏆 PR</span>':''}
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${e.day_type==='upper'?'<span style="color:var(--cyan)">OK</span>':'<span style="color:var(--pink)">UK</span>'} · ${d} ${t}</div>
+function renderGymLog(){
+  const log=document.getElementById('gymLog');
+  if(!gymData.length){log.innerHTML='<div class="empty-state">Noch keine Einträge</div>';return;}
+  log.innerHTML=gymData.slice(0,12).map(e=>{
+    const d=new Date(e.logged_at).toLocaleDateString('de-DE');
+    const t=new Date(e.logged_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    return`<div class="log-item">
+      <div><span class="log-name">${e.exercise}</span>${e.is_pr?'<span style="color:var(--yellow);margin-left:6px;font-size:11px">🏆 PR</span>':''}
+        <div class="log-meta">${e.day_type==='upper'?'<span style="color:var(--cyan)">OK</span>':'<span style="color:var(--pink)">UK</span>'} · ${d} ${t}</div>
       </div>
-      <div style="text-align:right"><span class="tag ${e.day_type==='upper'?'tag-gym':'tag-run'}">${e.weight}kg</span>
-        <div class="log-item-meta" style="margin-top:3px">${e.sets}×${e.reps}</div>
+      <div style="text-align:right"><span class="tag ${e.day_type==='upper'?'tag-cyan':'tag-pink'}">${e.weight}kg</span>
+        <div class="log-meta" style="margin-top:3px">${e.sets}×${e.reps}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function renderGymChart() {
-  const vol = {upper:0, lower:0};
-  gymData.forEach(e => { const v=(e.weight||0)*(e.reps||0)*(e.sets||0); e.day_type==='lower'?vol.lower+=v:vol.upper+=v; });
-  const canvas = document.getElementById('gymChart');
-  if (gymChart) gymChart.destroy();
-  gymChart = new Chart(canvas, {type:'bar',
+function renderGymChart(){
+  const vol={upper:0,lower:0};
+  gymData.forEach(e=>{const v=(e.weight||0)*(e.reps||0)*(e.sets||0);e.day_type==='lower'?vol.lower+=v:vol.upper+=v;});
+  const canvas=document.getElementById('gymChart');
+  if(gymChart)gymChart.destroy();
+  gymChart=new Chart(canvas,{type:'bar',
     data:{labels:['Oberkörper','Unterkörper'],datasets:[{data:[Math.round(vol.upper),Math.round(vol.lower)],backgroundColor:['#00f5d4aa','#f72585aa'],borderColor:['#00f5d4','#f72585'],borderWidth:2,borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:'#8892a4',font:{family:'Rajdhani',size:13}},grid:{color:'#ffffff08'}},y:{ticks:{color:'#8892a4',font:{family:'JetBrains Mono',size:11}},grid:{color:'#ffffff10'},beginAtZero:true}}}});
+      scales:{x:{ticks:{color:'#7a849a',font:{family:'Rajdhani',size:12}},grid:{color:'#ffffff06'}},y:{ticks:{color:'#7a849a',font:{family:'JetBrains Mono',size:10}},grid:{color:'#ffffff08'},beginAtZero:true}}}});
 }
 
-// ─── LAUFEN ───────────────────────────────────────────────────────
-async function addRunEntry() {
-  const dist = document.getElementById('runDistance').value;
-  const time = document.getElementById('runTime').value;
-  if (!dist||!time) { alert('Bitte Distanz und Zeit eingeben!'); return; }
-  const parts = time.split(':');
-  const pm = (parseInt(parts[0])||0)+(parseInt(parts[1]||0)/60);
-  const paceMin = pm/(parseFloat(dist)||1);
-  const pace = `${Math.floor(paceMin)}:${String(Math.round((paceMin%1)*60)).padStart(2,'0')}`;
-  const btn = document.getElementById('runSubmitBtn');
-  btn.disabled=true; btn.textContent='Wird gespeichert...';
+async function addRunEntry(){
+  const dist=document.getElementById('runDistance').value;
+  const time=document.getElementById('runTime').value;
+  if(!dist||!time){alert('Bitte Distanz und Zeit eingeben!');return;}
+  const parts=time.split(':');
+  const pm=(parseInt(parts[0])||0)+(parseInt(parts[1]||0)/60);
+  const paceMin=pm/(parseFloat(dist)||1);
+  const pace=`${Math.floor(paceMin)}:${String(Math.round((paceMin%1)*60)).padStart(2,'0')}`;
+  const btn=document.getElementById('runSubmitBtn');
+  btn.disabled=true;btn.textContent='Speichern...';
   setSyncState('syncing','Speichern...');
-  try {
-    const { data, error } = await freshInsert('run_entries', {
-      distance: parseFloat(dist),
-      duration: time,
-      run_type: document.getElementById('runType').value,
-      heart_rate: parseInt(document.getElementById('runHR').value)||null,
-      feel: parseInt(document.getElementById('runFeel').value),
-      pace,
-      logged_at: new Date().toISOString()
+  try{
+    const{data,error}=await freshInsert('run_entries',{
+      distance:parseFloat(dist),duration:time,run_type:document.getElementById('runType').value,
+      heart_rate:parseInt(document.getElementById('runHR').value)||null,
+      feel:parseInt(document.getElementById('runFeel').value),pace,logged_at:new Date().toISOString()
     });
-    if (error) throw error;
+    if(error)throw error;
     runData.unshift(data[0]);
-    updateRunStats(); renderRunLog(); renderRunChart();
-    ['runDistance','runTime','runHR'].forEach(id => document.getElementById(id).value='');
-    document.getElementById('runFeel').value='3'; document.getElementById('runFeelVal').textContent='3';
+    renderRunStats();renderRunLog();renderRunChart();renderOverview();
+    ['runDistance','runTime','runHR'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('runFeel').value='3';document.getElementById('runFeelVal').textContent='3';
     setSyncState('synced','Gespeichert ✓');
-  } catch(e) {
-    setSyncState('synced','Fehler: '+e.message);
-    alert('Fehler beim Speichern: '+e.message);
-  }
-  btn.disabled=false; btn.textContent='Eintragen';
+  }catch(e){setSyncState('synced','Fehler: '+e.message);alert('Fehler: '+e.message);}
+  btn.disabled=false;btn.textContent='Eintragen';
 }
 
-function updateRunStats() {
-  const total = runData.reduce((s,r)=>s+(r.distance||0),0);
-  document.getElementById('runKm').textContent = total.toFixed(1);
-  document.getElementById('runSessions').textContent = runData.length;
-  if (runData.length) document.getElementById('runAvgPace').textContent = runData[0].pace+'/km';
+function renderRunStats(){
+  const total=runData.reduce((s,r)=>s+(r.distance||0),0);
+  document.getElementById('runKm').textContent=total.toFixed(1);
+  document.getElementById('runSessions').textContent=runData.length;
+  if(runData.length)document.getElementById('runAvgPace').textContent=runData[0].pace+'/km';
 }
 
-function renderRunLog() {
-  const log = document.getElementById('runLog');
-  if (!runData.length) { log.innerHTML='<div class="empty-state">Noch keine Läufe</div>'; return; }
-  const feels = ['','😩','😐','😊','💪','🚀'];
-  log.innerHTML = runData.slice(0,8).map(r => {
-    const d = new Date(r.logged_at).toLocaleDateString('de-DE');
-    return `<div class="log-item">
-      <div><span class="log-item-name">${r.distance}km · ${r.run_type}${r.strava_id?'<span style="color:#FC4C02;font-size:10px;margin-left:6px;font-family:\'JetBrains Mono\',monospace">STRAVA</span>':''}</span>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${d}${r.heart_rate?' · ❤️ '+r.heart_rate+' bpm':''}${r.note?' · '+r.note:''}</div>
+function renderRunLog(){
+  const log=document.getElementById('runLog');
+  if(!runData.length){log.innerHTML='<div class="empty-state">Noch keine Läufe</div>';return;}
+  const feels=['','😩','😐','😊','💪','🚀'];
+  log.innerHTML=runData.slice(0,8).map(r=>{
+    const d=new Date(r.logged_at).toLocaleDateString('de-DE');
+    return`<div class="log-item">
+      <div><span class="log-name">${r.distance}km · ${r.run_type}${r.strava_id?'<span class="tag tag-strava" style="margin-left:6px;font-size:9px">STRAVA</span>':''}</span>
+        <div class="log-meta">${d}${r.heart_rate?' · ❤ '+r.heart_rate+' bpm':''}${r.note?' · '+r.note:''}</div>
       </div>
-      <div style="text-align:right"><span class="tag tag-run">${r.pace}/km</span>
-        <div class="log-item-meta" style="margin-top:3px">${feels[r.feel]||''}</div>
+      <div style="text-align:right"><span class="tag tag-pink">${r.pace}/km</span>
+        <div class="log-meta" style="margin-top:3px">${feels[r.feel]||''}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function renderRunChart() {
-  const canvas = document.getElementById('runChart');
-  if (runChart) runChart.destroy();
-  if (!runData.length) return;
-  const sorted = [...runData].reverse();
-  runChart = new Chart(canvas, {type:'line',
-    data:{labels:sorted.map((_,i)=>'#'+(i+1)),datasets:[{data:sorted.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258515',pointBackgroundColor:'#f72585',pointRadius:5,borderWidth:2,fill:true,tension:0.4}]},
+function renderRunChart(){
+  const canvas=document.getElementById('runChart');
+  if(runChart)runChart.destroy();
+  if(!runData.length)return;
+  const sorted=[...runData].reverse();
+  runChart=new Chart(canvas,{type:'line',
+    data:{labels:sorted.map((_,i)=>'#'+(i+1)),datasets:[{data:sorted.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258512',pointBackgroundColor:'#f72585',pointRadius:4,borderWidth:2,fill:true,tension:0.4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:'#8892a4',font:{family:'Rajdhani',size:12}},grid:{color:'#ffffff08'}},y:{ticks:{color:'#8892a4',font:{family:'JetBrains Mono',size:11}},grid:{color:'#ffffff10'},beginAtZero:true}}}});
+      scales:{x:{ticks:{color:'#7a849a',font:{family:'Rajdhani',size:11}},grid:{color:'#ffffff06'}},y:{ticks:{color:'#7a849a',font:{family:'JetBrains Mono',size:10}},grid:{color:'#ffffff08'},beginAtZero:true}}}});
 }
 
-// ─── ERNÄHRUNG ────────────────────────────────────────────────────
-async function addFoodEntry() {
-  const name = document.getElementById('foodName').value;
-  const kcal = parseInt(document.getElementById('foodCalories').value)||0;
-  if (!name||!kcal) { alert('Bitte Mahlzeit und Kalorien eingeben!'); return; }
-  const btn = document.getElementById('foodSubmitBtn');
-  btn.disabled=true; btn.textContent='Wird gespeichert...';
+async function addFoodEntry(){
+  const name=document.getElementById('foodName').value;
+  const kcal=parseInt(document.getElementById('foodCalories').value)||0;
+  if(!name||!kcal){alert('Bitte Mahlzeit und Kalorien eingeben!');return;}
+  const btn=document.getElementById('foodSubmitBtn');
+  btn.disabled=true;btn.textContent='Speichern...';
   setSyncState('syncing','Speichern...');
-  try {
-    const { data, error } = await freshInsert('food_entries', {
-      name,
-      meal_type: document.getElementById('foodType').value,
-      calories: kcal,
-      protein: parseFloat(document.getElementById('foodProteinG').value)||0,
-      carbs: parseFloat(document.getElementById('foodCarbs').value)||0,
-      fat: parseFloat(document.getElementById('foodFat').value)||0,
-      logged_at: new Date().toISOString()
+  try{
+    const{data,error}=await freshInsert('food_entries',{
+      name,meal_type:document.getElementById('foodType').value,calories:kcal,
+      protein:parseFloat(document.getElementById('foodProteinG').value)||0,
+      carbs:parseFloat(document.getElementById('foodCarbs').value)||0,
+      fat:parseFloat(document.getElementById('foodFat').value)||0,
+      logged_at:new Date().toISOString()
     });
-    if (error) throw error;
+    if(error)throw error;
     foodData.unshift(data[0]);
-    updateFoodStats(); renderFoodLog();
-    ['foodName','foodCalories','foodProteinG','foodCarbs','foodFat'].forEach(id => document.getElementById(id).value='');
+    renderFoodStats();renderFoodLog();renderOverview();
+    ['foodName','foodCalories','foodProteinG','foodCarbs','foodFat'].forEach(id=>document.getElementById(id).value='');
     setSyncState('synced','Gespeichert ✓');
-  } catch(e) {
-    setSyncState('synced','Fehler: '+e.message);
-    alert('Fehler beim Speichern: '+e.message);
-  }
-  btn.disabled=false; btn.textContent='Eintragen';
+  }catch(e){setSyncState('synced','Fehler: '+e.message);alert('Fehler: '+e.message);}
+  btn.disabled=false;btn.textContent='Eintragen';
 }
 
-function updateFoodStats() {
-  const today = new Date().toISOString().split('T')[0];
-  const tf = foodData.filter(f => f.logged_at.startsWith(today));
-  const K=tf.reduce((s,f)=>s+f.calories,0), P=tf.reduce((s,f)=>s+f.protein,0);
-  const C=tf.reduce((s,f)=>s+f.carbs,0), F=tf.reduce((s,f)=>s+f.fat,0);
+function renderFoodStats(){
+  const today=new Date().toISOString().split('T')[0];
+  const tf=foodData.filter(f=>f.logged_at.startsWith(today));
+  const K=tf.reduce((s,f)=>s+f.calories,0),P=tf.reduce((s,f)=>s+f.protein,0);
+  const C=tf.reduce((s,f)=>s+f.carbs,0),F=tf.reduce((s,f)=>s+f.fat,0);
   const pct=(v,g)=>Math.min(110,Math.round(v/g*100));
   const setBar=(barId,fillId,val,goal,color)=>{
     document.getElementById(barId).textContent=val+' / '+goal+(barId==='kcalBar'?' kcal':'g');
     const fill=document.getElementById(fillId);
     fill.style.width=pct(val,goal)+'%';
-    fill.className='progress-fill'+(val>goal?' over':'');
+    fill.className='pfill'+(val>goal?' over':'');
     if(val<=goal)fill.style.background=color;
   };
   setBar('kcalBar','kcalFill',K,GOALS.kcal,'var(--yellow)');
   setBar('protBar','protFill',P,GOALS.prot,'var(--orange)');
   setBar('carbBar','carbFill',C,GOALS.carbs,'var(--cyan)');
   setBar('fatBar','fatFill',F,GOALS.fat,'var(--purple)');
-  const left = GOALS.kcal-K;
-  const el = document.getElementById('kcalLeft');
-  el.textContent = left>0 ? left+' kcal verbleibend' : '⚠️ Ziel überschritten';
-  el.style.color = left<0 ? '#ff4d4d' : 'var(--yellow)';
+  const left=GOALS.kcal-K;
+  const el=document.getElementById('kcalLeft');
+  el.textContent=left>0?left+' kcal verbleibend':'⚠ Ziel überschritten';
+  el.style.color=left<0?'#ff4d4d':'var(--yellow)';
 }
 
-function renderFoodLog() {
-  const log = document.getElementById('foodLog');
-  const today = new Date().toISOString().split('T')[0];
-  const tf = foodData.filter(f => f.logged_at.startsWith(today));
-  if (!tf.length) { log.innerHTML='<div class="empty-state">Heute noch nichts eingetragen</div>'; return; }
-  log.innerHTML = tf.map(f => {
-    const t = new Date(f.logged_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="log-item">
-      <div><span class="log-item-name">${f.name}</span>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${f.meal_type} · ${t} · <span style="color:var(--cyan)">${f.carbs}g C</span> · <span style="color:var(--purple)">${f.fat}g F</span></div>
+function renderFoodLog(){
+  const log=document.getElementById('foodLog');
+  const today=new Date().toISOString().split('T')[0];
+  const tf=foodData.filter(f=>f.logged_at.startsWith(today));
+  if(!tf.length){log.innerHTML='<div class="empty-state">Heute noch nichts eingetragen</div>';return;}
+  log.innerHTML=tf.map(f=>{
+    const t=new Date(f.logged_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    return`<div class="log-item">
+      <div><span class="log-name">${f.name}</span>
+        <div class="log-meta">${f.meal_type} · ${t} · <span style="color:var(--cyan)">${f.carbs}g C</span> · <span style="color:var(--purple)">${f.fat}g F</span></div>
       </div>
-      <div style="text-align:right"><span class="tag tag-food">${f.calories} kcal</span>
-        <div class="log-item-meta" style="margin-top:3px;color:var(--orange)">${f.protein}g P</div>
+      <div style="text-align:right"><span class="tag tag-yellow">${f.calories} kcal</span>
+        <div class="log-meta" style="margin-top:3px;color:var(--orange)">${f.protein}g P</div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ─── GEWICHT ─────────────────────────────────────────────────────
-function getWeekLabel() {
-  const d=new Date(), jan1=new Date(d.getFullYear(),0,1);
-  return `KW${Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7)} ${d.getFullYear()}`;
+function getWeekLabel(){
+  const d=new Date(),jan1=new Date(d.getFullYear(),0,1);
+  return`KW${Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7)} ${d.getFullYear()}`;
 }
 
-async function addWeightEntry() {
-  const kg = document.getElementById('weightInput').value;
-  if (!kg) { alert('Bitte Gewicht eingeben!'); return; }
-  const week = getWeekLabel();
+async function addWeightEntry(){
+  const kg=document.getElementById('weightInput').value;
+  if(!kg){alert('Bitte Gewicht eingeben!');return;}
+  const week=getWeekLabel();
   setSyncState('syncing','Speichern...');
-  const existing = weightData.find(w => w.week_label===week);
-  if (existing) {
+  const existing=weightData.find(w=>w.week_label===week);
+  if(existing){
     await db.from('weight_entries').update({weight:parseFloat(kg)}).eq('id',existing.id);
-    existing.weight = parseFloat(kg);
-  } else {
-    const { data } = await db.from('weight_entries').insert({
-      user_id: currentUser.id, weight: parseFloat(kg), week_label: week, logged_at: new Date().toISOString()
-    }).select();
-    if (data) weightData.push(data[0]);
+    existing.weight=parseFloat(kg);
+  }else{
+    const{data}=await db.from('weight_entries').insert({user_id:currentUser.id,weight:parseFloat(kg),week_label:week,logged_at:new Date().toISOString()}).select();
+    if(data)weightData.push(data[0]);
   }
-  renderWeightLog(); renderWeightChart();
+  renderWeightLog();renderWeightChart();renderOverview();
   document.getElementById('weightInput').value='';
   setSyncState('synced','Gespeichert ✓');
 }
 
-function renderWeightLog() {
-  const log = document.getElementById('weightLog');
-  if (!weightData.length) { log.innerHTML='<div class="empty-state">Noch keine Einträge</div>'; return; }
-  log.innerHTML = [...weightData].reverse().map((w,i,arr) => {
-    const prev = arr[i+1];
-    let delta = '';
-    if (prev) { const d=(w.weight-prev.weight).toFixed(1); delta=`<span style="color:${d>0?'var(--orange)':'var(--green)'};font-family:'JetBrains Mono',monospace;font-size:12px">${d>0?'+':''}${d}kg</span>`; }
-    return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
-      <div><span style="font-weight:600">${parseFloat(w.weight).toFixed(1)} kg</span>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${w.week_label}</div>
+function renderWeightLog(){
+  const log=document.getElementById('weightLog');
+  if(!weightData.length){log.innerHTML='<div class="empty-state">Noch keine Einträge</div>';return;}
+  log.innerHTML=[...weightData].reverse().map((w,i,arr)=>{
+    const prev=arr[i+1];
+    let delta='';
+    if(prev){const d=(w.weight-prev.weight).toFixed(1);delta=`<span style="color:${d>0?'var(--orange)':'var(--green)'};font-family:'JetBrains Mono',monospace;font-size:12px">${d>0?'+':''}${d}kg</span>`;}
+    return`<div class="log-item">
+      <div><span class="log-name">${parseFloat(w.weight).toFixed(1)} kg</span>
+        <div class="log-meta">${w.week_label}</div>
       </div>
       <div>${delta}</div>
     </div>`;
   }).join('');
 }
 
-function renderWeightChart() {
-  const canvas = document.getElementById('weightChart');
-  if (weightChart) weightChart.destroy();
-  if (!weightData.length) return;
-  const startW = weightData[0].weight;
-  weightChart = new Chart(canvas, {type:'line',
+function renderWeightChart(){
+  const canvas=document.getElementById('weightChart');
+  if(weightChart)weightChart.destroy();
+  if(!weightData.length)return;
+  const startW=weightData[0].weight;
+  weightChart=new Chart(canvas,{type:'line',
     data:{labels:weightData.map(w=>w.week_label),datasets:[
-      {data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#ffd60a',backgroundColor:'#ffd60a15',pointBackgroundColor:'#ffd60a',pointRadius:5,borderWidth:2,fill:true,tension:0.3},
-      {data:weightData.map(()=>startW),borderColor:'#ffffff20',borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false}
+      {data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#7b2fff',backgroundColor:'#7b2fff12',pointBackgroundColor:'#7b2fff',pointRadius:5,borderWidth:2,fill:true,tension:0.3},
+      {data:weightData.map(()=>startW),borderColor:'#ffffff15',borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:'#8892a4',font:{family:'Rajdhani',size:11},maxRotation:45},grid:{color:'#ffffff08'}},
-              y:{ticks:{color:'#8892a4',font:{family:'JetBrains Mono',size:11},callback:v=>v.toFixed(1)+'kg'},grid:{color:'#ffffff10'}}}}});
+      scales:{x:{ticks:{color:'#7a849a',font:{family:'Rajdhani',size:10},maxRotation:45},grid:{color:'#ffffff06'}},
+              y:{ticks:{color:'#7a849a',font:{family:'JetBrains Mono',size:10},callback:function(v){return v.toFixed(1)+'kg'}},grid:{color:'#ffffff08'}}}}});
 }
 
-// ─── STRAVA ───────────────────────────────────────────────────────
-async function stravaExchangeCode(code) {
-  try {
-    const resp = await fetch('https://www.strava.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: STRAVA_CLIENT_ID,
-        client_secret: STRAVA_CLIENT_SECRET,
-        code,
-        grant_type: 'authorization_code'
-      })
-    });
-    const data = await resp.json();
-    if (!data.access_token) throw new Error(data.message || 'Auth fehlgeschlagen');
-    await stravaStoreTokens(data);
-  } catch(e) {
-    console.error('Strava auth error:', e);
+function renderOverview(){
+  const totalVol=gymData.reduce((s,e)=>s+(e.weight||0)*(e.reps||0)*(e.sets||0),0);
+  document.getElementById('ov-gym-val').textContent=gymData.length;
+  document.getElementById('ov-gym-sub').textContent=gymData.length?Math.round(totalVol).toLocaleString('de-DE')+' kg Gesamtvolumen':'Noch keine Einträge';
+  document.getElementById('ov-gym-badge').textContent=gymData.filter(e=>e.is_pr).length+' PRs gesamt';
+  const totalKm=runData.reduce((s,r)=>s+(r.distance||0),0);
+  document.getElementById('ov-run-val').textContent=totalKm.toFixed(1);
+  document.getElementById('ov-run-sub').textContent=runData.length?runData.length+' Läufe':'Noch keine Läufe';
+  document.getElementById('ov-run-badge').textContent=runData.length?'Letzter: '+runData[0].pace+'/km':'–';
+  const today=new Date().toISOString().split('T')[0];
+  const tf=foodData.filter(f=>f.logged_at.startsWith(today));
+  const K=tf.reduce((s,f)=>s+f.calories,0);
+  document.getElementById('ov-food-val').textContent=K.toLocaleString('de-DE');
+  document.getElementById('ov-food-bar').style.width=Math.min(100,Math.round(K/GOALS.kcal*100))+'%';
+  const left=GOALS.kcal-K;
+  document.getElementById('ov-food-badge').textContent=left>0?left+' kcal verbleibend':'Ziel erreicht';
+  if(weightData.length){
+    const last=weightData[weightData.length-1];
+    const first=weightData[0];
+    document.getElementById('ov-weight-val').textContent=parseFloat(last.weight).toFixed(1)+' kg';
+    document.getElementById('ov-weight-sub').textContent='Start: '+parseFloat(first.weight).toFixed(1)+' kg';
+    const diff=(last.weight-first.weight).toFixed(1);
+    document.getElementById('ov-weight-badge').textContent=(diff>0?'+':'')+diff+' kg seit Start';
   }
-}
-
-async function stravaStoreTokens(data) {
-  await db.from('user_settings').upsert({
-    user_id: currentUser.id,
-    strava_access_token: data.access_token,
-    strava_refresh_token: data.refresh_token,
-    strava_expires_at: data.expires_at,
-    strava_athlete_id: data.athlete?.id || null,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id' });
-  stravaTokens = {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: data.expires_at,
-    athlete_id: data.athlete?.id || null
-  };
-  updateStravaUI();
-}
-
-async function stravaGetToken() {
-  if (!stravaTokens) return null;
-  if (stravaTokens.expires_at > Math.floor(Date.now() / 1000) + 60) return stravaTokens.access_token;
-  try {
-    const resp = await fetch('https://www.strava.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: STRAVA_CLIENT_ID,
-        client_secret: STRAVA_CLIENT_SECRET,
-        refresh_token: stravaTokens.refresh_token,
-        grant_type: 'refresh_token'
-      })
-    });
-    const data = await resp.json();
-    if (!data.access_token) throw new Error('Refresh fehlgeschlagen');
-    await stravaStoreTokens(data);
-    return data.access_token;
-  } catch(e) {
-    console.error('Strava refresh error:', e);
-    return null;
-  }
-}
-
-async function stravaSync(showFeedback = true) {
-  const token = await stravaGetToken();
-  if (!token) return;
-  if (showFeedback) setSyncState('syncing', 'Strava: Aktivitäten werden geladen...');
-  try {
-    const { data: cfg } = await db.from('user_settings')
-      .select('strava_last_sync').eq('user_id', currentUser.id).single();
-    const after = cfg?.strava_last_sync
-      ? Math.floor(new Date(cfg.strava_last_sync).getTime() / 1000)
-      : Math.floor(Date.now() / 1000) - 90 * 86400;
-
-    const resp = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?per_page=100&after=${after}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const activities = await resp.json();
-    if (!Array.isArray(activities)) throw new Error('Strava API Fehler');
-
-    const runs = activities.filter(a => ['Run','VirtualRun','TrailRun'].includes(a.sport_type || a.type));
-    const existing = new Set(runData.map(r => r.strava_id).filter(Boolean));
-    const fresh = runs.filter(a => !existing.has(String(a.id)));
-
-    if (fresh.length) {
-      const rows = fresh.map(a => ({
-        user_id: currentUser.id,
-        distance: parseFloat((a.distance / 1000).toFixed(2)),
-        duration: stravaFmtDur(a.moving_time),
-        run_type: 'Strava Import',
-        heart_rate: a.average_heartrate ? Math.round(a.average_heartrate) : null,
-        feel: 3,
-        pace: stravaFmtPace(a.distance, a.moving_time),
-        logged_at: a.start_date,
-        strava_id: String(a.id),
-        note: a.name || ''
-      }));
-      const { error } = await db.from('run_entries').insert(rows);
-      if (error) throw error;
-      const { data: allRuns } = await db.from('run_entries')
-        .select('*').eq('user_id', currentUser.id).order('logged_at', { ascending: false });
-      runData = allRuns || [];
-      updateRunStats(); renderRunLog(); renderRunChart();
+  if(stravaTokens){
+    const strava_runs=runData.filter(r=>r.strava_id);
+    if(strava_runs.length){
+      const last=strava_runs[0];
+      document.getElementById('ov-strava-val').textContent=last.distance+' km';
+      document.getElementById('ov-strava-sub').textContent=last.pace+'/km'+(last.heart_rate?' · '+last.heart_rate+' bpm':'');
+      document.getElementById('ov-strava-badge').textContent=strava_runs.length+' Strava-Läufe';
     }
+    document.getElementById('ov-strava-status').innerHTML='<span style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span><span style="font-size:11px;color:var(--green);font-family:JetBrains Mono,monospace">Verbunden</span></span>';
+  }
+  const splitDay=getSplitDay();
+  const splitNames={upper:'Oberkörper',lower:'Unterkörper',rest:'Pause'};
+  document.getElementById('ov-split-val').textContent=splitDay?splitNames[splitDay]:'–';
+  document.getElementById('ov-split-sub').textContent=splitDay?(splitDay==='upper'?'Tag A':splitDay==='lower'?'Tag B':'Tag C · Erholung'):'Startdatum einstellen';
+  const splitDays=['upper','lower','rest'];
+  const splitLabels=['OK','UK','Pause'];
+  document.getElementById('ov-split-days').innerHTML=splitDays.map((k,i)=>{
+    const isToday=splitDay===k;
+    return'<div style="flex:1;text-align:center;padding:6px 4px;border-radius:6px;background:'+(isToday?'#60a5fa15':'var(--bg4)')+';border:1px solid '+(isToday?'#60a5fa30':'var(--border)')+'"><div style="font-size:9px;color:'+(isToday?'#60a5fa':'var(--text3)')+';letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">'+(isToday?'Heute':'–')+'</div><div style="font-size:12px;font-weight:700;color:'+(isToday?'#60a5fa':'var(--text3)')+'">'+splitLabels[i]+'</div></div>';
+  }).join('');
+  renderOverviewCharts();
+  renderOverviewActivityLog();
+  const P=tf.reduce((s,f)=>s+f.protein,0);
+  const C=tf.reduce((s,f)=>s+f.carbs,0);
+  const F=tf.reduce((s,f)=>s+f.fat,0);
+  const pct=function(v,g){return Math.min(110,Math.round(v/g*100));};
+  document.getElementById('ov-kcal-bar').textContent=K+' / 3700 kcal';
+  document.getElementById('ov-kcal-fill').style.width=pct(K,GOALS.kcal)+'%';
+  document.getElementById('ov-prot-bar').textContent=P+' / 200g';
+  document.getElementById('ov-prot-fill').style.width=pct(P,GOALS.prot)+'%';
+  document.getElementById('ov-carb-bar').textContent=C+' / 430g';
+  document.getElementById('ov-carb-fill').style.width=pct(C,GOALS.carbs)+'%';
+  document.getElementById('ov-fat-bar').textContent=F+' / 95g';
+  document.getElementById('ov-fat-fill').style.width=pct(F,GOALS.fat)+'%';
+}
 
-    await db.from('user_settings').upsert({
-      user_id: currentUser.id,
-      strava_last_sync: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-
-    if (showFeedback) setSyncState('synced', fresh.length ? `Strava: ${fresh.length} neue Läufe ✓` : 'Strava: Kein neuer Lauf');
-  } catch(e) {
-    console.error('Strava sync error:', e);
-    if (showFeedback) setSyncState('synced', 'Strava: Fehler beim Sync');
+function renderOverviewCharts(){
+  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
+  if(ovGymChart)ovGymChart.destroy();
+  const gymLast=[...gymData].reverse().slice(-8);
+  ovGymChart=new Chart(document.getElementById('ovGymChart'),{type:'line',data:{labels:gymLast.map((_,i)=>i),datasets:[{data:gymLast.map(e=>(e.weight||0)*(e.reps||0)*(e.sets||0)),borderColor:'#00f5d4',backgroundColor:'#00f5d412',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
+  if(ovRunChart)ovRunChart.destroy();
+  const runLast=[...runData].reverse().slice(-8);
+  ovRunChart=new Chart(document.getElementById('ovRunChart'),{type:'line',data:{labels:runLast.map((_,i)=>i),datasets:[{data:runLast.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258512',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
+  if(ovWeightChart)ovWeightChart.destroy();
+  if(weightData.length){
+    ovWeightChart=new Chart(document.getElementById('ovWeightChart'),{type:'line',data:{labels:weightData.map((_,i)=>i),datasets:[{data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#7b2fff',backgroundColor:'#7b2fff12',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
   }
 }
 
-function stravaFmtDur(sec) {
-  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+function renderOverviewActivityLog(){
+  const log=document.getElementById('ov-activity-log');
+  const all=[];
+  gymData.slice(0,3).forEach(e=>all.push({name:e.exercise,meta:e.weight+'kg · '+e.sets+'x'+e.reps,time:new Date(e.logged_at),tag:'OK',tc:'tag-cyan'}));
+  runData.slice(0,3).forEach(r=>all.push({name:r.distance+'km Lauf',meta:r.pace+'/km'+(r.heart_rate?' · '+r.heart_rate+' bpm':''),time:new Date(r.logged_at),tag:r.strava_id?'STRAVA':'Lauf',tc:r.strava_id?'tag-strava':'tag-pink'}));
+  const today=new Date().toISOString().split('T')[0];
+  foodData.filter(f=>f.logged_at.startsWith(today)).slice(0,2).forEach(f=>all.push({name:f.name,meta:f.calories+' kcal · '+f.protein+'g P',time:new Date(f.logged_at),tag:'Essen',tc:'tag-yellow'}));
+  all.sort((a,b)=>b.time-a.time);
+  if(!all.length){log.innerHTML='<div class="empty-state">Noch keine Aktivitäten</div>';return;}
+  log.innerHTML=all.slice(0,6).map(a=>'<div class="log-item"><div><span class="log-name">'+a.name+'</span><div class="log-meta">'+a.meta+'</div></div><span class="tag '+a.tc+'">'+a.tag+'</span></div>').join('');
 }
 
-function stravaFmtPace(distM, sec) {
-  if (!distM || !sec) return '0:00';
-  const p = sec / 60 / (distM / 1000);
-  return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')}`;
+async function stravaExchangeCode(code){
+  try{
+    const resp=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:STRAVA_CLIENT_ID,client_secret:STRAVA_CLIENT_SECRET,code:code,grant_type:'authorization_code'})});
+    const data=await resp.json();
+    if(!data.access_token)throw new Error(data.message||'Auth fehlgeschlagen');
+    await stravaStoreTokens(data);
+  }catch(e){console.error('Strava auth error:',e);}
 }
 
-function updateStravaUI() {
-  const btn = document.getElementById('stravaConnectBtn');
-  const status = document.getElementById('stravaStatus');
-  if (!btn || !status) return;
-  if (stravaTokens?.access_token) {
-    status.innerHTML = '<span style="color:var(--green)">● Verbunden</span>';
-    btn.textContent = 'Trennen';
-    btn.style.cssText = 'padding:7px 16px;border-radius:8px;border:1px solid var(--border2);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--text3)';
-    btn.onclick = stravaDisconnect;
-  } else {
-    status.innerHTML = '<span style="color:var(--text3)">● Nicht verbunden</span>';
-    btn.textContent = 'Verbinden';
-    btn.style.cssText = 'padding:7px 16px;border-radius:8px;border:none;font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:#FC4C02;color:#fff';
-    btn.onclick = () => { window.location.href = STRAVA_AUTH_URL; };
-  }
-}
-
-async function stravaDisconnect() {
-  await db.from('user_settings').upsert({
-    user_id: currentUser.id,
-    strava_access_token: null,
-    strava_refresh_token: null,
-    strava_expires_at: null,
-    strava_athlete_id: null,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id' });
-  stravaTokens = null;
+async function stravaStoreTokens(data){
+  await db.from('user_settings').upsert({user_id:currentUser.id,strava_access_token:data.access_token,strava_refresh_token:data.refresh_token,strava_expires_at:data.expires_at,strava_athlete_id:data.athlete?data.athlete.id:null,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  stravaTokens={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:data.expires_at,athlete_id:data.athlete?data.athlete.id:null};
   updateStravaUI();
 }
 
-// ─── UI HELPERS ───────────────────────────────────────────────────
-function switchTab(t) {
-  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
-  document.querySelector('.tab.'+t).classList.add('active');
-  document.getElementById({gym:'gymPanel',run:'runPanel',food:'foodPanel'}[t]).classList.add('active');
+async function stravaGetToken(){
+  if(!stravaTokens)return null;
+  if(stravaTokens.expires_at>Math.floor(Date.now()/1000)+60)return stravaTokens.access_token;
+  try{
+    const resp=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:STRAVA_CLIENT_ID,client_secret:STRAVA_CLIENT_SECRET,refresh_token:stravaTokens.refresh_token,grant_type:'refresh_token'})});
+    const data=await resp.json();
+    if(!data.access_token)throw new Error('Refresh fehlgeschlagen');
+    await stravaStoreTokens(data);return data.access_token;
+  }catch(e){console.error('Strava refresh:',e);return null;}
+}
+
+async function stravaSync(showFeedback){
+  const token=await stravaGetToken();if(!token)return;
+  if(showFeedback)setSyncState('syncing','Strava: Aktivitäten laden...');
+  try{
+    const cfg=await db.from('user_settings').select('strava_last_sync').eq('user_id',currentUser.id).single();
+    const after=cfg.data&&cfg.data.strava_last_sync?Math.floor(new Date(cfg.data.strava_last_sync).getTime()/1000):Math.floor(Date.now()/1000)-90*86400;
+    const resp=await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=100&after='+after,{headers:{Authorization:'Bearer '+token}});
+    const activities=await resp.json();
+    if(!Array.isArray(activities))throw new Error('Strava API Fehler');
+    const runs=activities.filter(function(a){return['Run','VirtualRun','TrailRun'].includes(a.sport_type||a.type);});
+    const existing=new Set(runData.map(function(r){return r.strava_id;}).filter(Boolean));
+    const fresh=runs.filter(function(a){return!existing.has(String(a.id));});
+    if(fresh.length){
+      const rows=fresh.map(function(a){return{user_id:currentUser.id,distance:parseFloat((a.distance/1000).toFixed(2)),duration:stravaFmtDur(a.moving_time),run_type:'Strava Import',heart_rate:a.average_heartrate?Math.round(a.average_heartrate):null,feel:3,pace:stravaFmtPace(a.distance,a.moving_time),logged_at:a.start_date,strava_id:String(a.id),note:a.name||''};});
+      const ins=await db.from('run_entries').insert(rows);
+      if(ins.error)throw ins.error;
+      const allRuns=await db.from('run_entries').select('*').eq('user_id',currentUser.id).order('logged_at',{ascending:false});
+      runData=allRuns.data||[];renderRunStats();renderRunLog();renderRunChart();renderOverview();
+    }
+    await db.from('user_settings').upsert({user_id:currentUser.id,strava_last_sync:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(showFeedback)setSyncState('synced',fresh.length?'Strava: '+fresh.length+' neue Läufe':'Strava: Alles aktuell');
+  }catch(e){console.error('Strava sync:',e);if(showFeedback)setSyncState('synced','Strava: Sync-Fehler');}
+}
+
+function stravaFmtDur(sec){return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');}
+function stravaFmtPace(distM,sec){if(!distM||!sec)return'0:00';var p=sec/60/(distM/1000);return Math.floor(p)+':'+String(Math.round((p%1)*60)).padStart(2,'0');}
+
+function updateStravaUI(){
+  const btn=document.getElementById('stravaConnectBtn');
+  const syncBtn=document.getElementById('stravaSyncBtn');
+  const status=document.getElementById('stravaStatus');
+  const navBadge=document.getElementById('stravaNavBadge');
+  if(!btn||!status)return;
+  if(stravaTokens&&stravaTokens.access_token){
+    status.innerHTML='<span style="color:var(--green)">● Verbunden · Auto-Sync aktiv</span>';
+    btn.textContent='Trennen';
+    btn.style.cssText='padding:7px 16px;border-radius:8px;border:1px solid var(--border2);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--text3)';
+    btn.onclick=stravaDisconnect;
+    syncBtn.style.display='block';
+    navBadge.style.cssText='display:inline-block;background:#39ff1415;color:var(--green);border:1px solid #39ff1430;padding:2px 6px;border-radius:8px;font-size:9px';
+    navBadge.textContent='Live';
+  }else{
+    status.innerHTML='<span style="color:var(--text3)">● Nicht verbunden</span>';
+    btn.textContent='Verbinden';
+    btn.style.cssText='padding:7px 16px;border-radius:8px;border:none;font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--strava);color:#fff';
+    btn.onclick=function(){window.location.href=STRAVA_AUTH_URL;};
+    syncBtn.style.display='none';
+    navBadge.style.display='none';
+  }
+}
+
+async function stravaDisconnect(){
+  await db.from('user_settings').upsert({user_id:currentUser.id,strava_access_token:null,strava_refresh_token:null,strava_expires_at:null,strava_athlete_id:null,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  stravaTokens=null;updateStravaUI();
 }
 
 function openModal(){document.getElementById('deleteModal').classList.add('visible');}
 function closeModal(){document.getElementById('deleteModal').classList.remove('visible');}
-async function confirmDelete() {
-  const uid = currentUser.id;
+
+async function confirmDelete(){
+  var uid=currentUser.id;
   setSyncState('syncing','Löschen...');
-  await Promise.all([
-    db.from('gym_entries').delete().eq('user_id',uid),
-    db.from('run_entries').delete().eq('user_id',uid),
-    db.from('food_entries').delete().eq('user_id',uid),
-    db.from('weight_entries').delete().eq('user_id',uid),
-  ]);
-  gymData=[]; runData=[]; foodData=[]; weightData=[];
-  closeModal();
-  updateGymStats(); renderGymLog(); renderGymChart();
-  updateRunStats(); renderRunLog(); renderRunChart();
-  updateFoodStats(); renderFoodLog();
-  renderWeightLog(); renderWeightChart();
-  setSyncState('synced','Daten gelöscht ✓');
+  await Promise.all([db.from('gym_entries').delete().eq('user_id',uid),db.from('run_entries').delete().eq('user_id',uid),db.from('food_entries').delete().eq('user_id',uid),db.from('weight_entries').delete().eq('user_id',uid)]);
+  gymData=[];runData=[];foodData=[];weightData=[];
+  closeModal();renderAll();
+  setSyncState('synced','Daten gelöscht');
 }
 
-// Enter-Taste im Auth-Formular
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && document.getElementById('authScreen').style.display!=='none') handleAuth();
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.getElementById('authScreen').style.display!=='none')handleAuth();
 });
 
 init();
