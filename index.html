@@ -329,7 +329,7 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
               </div>
             </div>
-            <canvas id="ovGymChart" class="mini-chart"></canvas>
+            <canvas id="ovGymChart" width="200" height="36" style="width:100%;height:36px"></canvas>
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span class="cbadge cb-up" id="ov-gym-badge">–</span>
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
@@ -347,7 +347,7 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.5"/><path d="m7 21 3-6m0 0 2-4 3 2 2-6M10 15l-3-3 2-2"/></svg>
               </div>
             </div>
-            <canvas id="ovRunChart" class="mini-chart"></canvas>
+
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span class="cbadge cb-up" id="ov-run-badge">–</span>
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
@@ -383,7 +383,7 @@ input[type=range]{background:transparent;border:none;padding:4px 0;accent-color:
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h12M4 10h16l-2 8H6l-2-8z"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>
               </div>
             </div>
-            <canvas id="ovWeightChart" class="mini-chart"></canvas>
+            <canvas id="ovWeightChart" width="200" height="36" style="width:100%;height:36px"></canvas>
             <div style="display:flex;align-items:center;justify-content:space-between">
               <span class="cbadge cb-down" id="ov-weight-badge">–</span>
               <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ Details</span>
@@ -1152,7 +1152,8 @@ function renderOverview(){
 }
 
 function renderOverviewCharts(){
-  const opts={responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
+  if(document.getElementById('page-overview').style.display==='none'||!document.getElementById('page-overview').classList.contains('active'))return;
+  const opts={responsive:false,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
   const gymCanvas=document.getElementById('ovGymChart');
   const runCanvas=document.getElementById('ovRunChart');
   const wCanvas=document.getElementById('ovWeightChart');
@@ -1161,8 +1162,7 @@ function renderOverviewCharts(){
   if(ovWeightChart){ovWeightChart.destroy();ovWeightChart=null;}
   const gymLast=[...gymData].reverse().slice(-8);
   if(gymLast.length)ovGymChart=new Chart(gymCanvas,{type:'line',data:{labels:gymLast.map((_,i)=>i),datasets:[{data:gymLast.map(e=>(e.weight||0)*(e.reps||0)*(e.sets||0)),borderColor:'#00f5d4',backgroundColor:'#00f5d412',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
-  const runLast=[...runData].reverse().slice(-8);
-  if(runLast.length)ovRunChart=new Chart(runCanvas,{type:'line',data:{labels:runLast.map((_,i)=>i),datasets:[{data:runLast.map(r=>r.distance||0),borderColor:'#f72585',backgroundColor:'#f7258512',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
+
   if(weightData.length)ovWeightChart=new Chart(wCanvas,{type:'line',data:{labels:weightData.map((_,i)=>i),datasets:[{data:weightData.map(w=>parseFloat(w.weight)),borderColor:'#7b2fff',backgroundColor:'#7b2fff12',pointRadius:0,borderWidth:1.5,fill:true,tension:0.4}]},options:opts});
 }
 
